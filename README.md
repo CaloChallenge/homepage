@@ -1,9 +1,6 @@
-# homepage
-Homepage for the Fast Calorimeter Simulation Challenge 2022
-
 ## Welcome to the home of the Fast Calorimeter Simulation Challenge 2022!
 
-![img](Banner_grey.jpg)
+<-- ![img](Banner_grey.jpg) -->
 
 Add description of challenge here.
 
