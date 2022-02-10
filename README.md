@@ -12,7 +12,9 @@ This challenge is modeled after previous, highly successful data challenges in H
 
 ### Datasets
 
-We expect to release up to three datasets during the course of the challenge, ranging in difficulty from ``easy" to "medium" to "hard". The difficulty is set by the dimensionality of the calorimeter showers (the number layers and the number of voxels in each layer).
+<p style='text-align: justify;'>
+We expect to release up to three datasets during the course of the challenge, ranging in difficulty from <q>easy</q> to <q>medium</q> to <q>hard</q>. The difficulty is set by the dimensionality of the calorimeter showers (the number layers and the number of voxels in each layer). The <q>hard</q> Dataset 3 also includes incoming particles at different angles.
+</p>
 
 - Dataset 1: The ATLAS GEANT4 open datasets [link](http://opendata-qa.cern.ch/record/15012). There are two groups of datasets, one for charged pions and one for photons. Each set consists of 15 csv files corresponsing to 15 energies from 256 MeV up to 4TeV produced in powers of two. Each dataset contains the voxelised shower information obtained from single particles  produced at the calorimeter surface in the η range (0.2-0.25) and simulated in the ATLAS detector. 10k events are available in each sample with the exception of those at higher energies that have a lower statistics. These samples were used to train the corresponding two GANs presented in the AtlFast3 paper [SIMU-2018-04](https://atlas.web.cern.ch/Atlas/GROUPS/PHYSICS/PAPERS/SIMU-2018-04/) and in the FastCaloGAN note [ATL-SOFT-PUB-2020-006](https://atlas.web.cern.ch/Atlas/GROUPS/PHYSICS/PUBNOTES/ATL-SOFT-PUB-2020-006/).
 
@@ -22,11 +24,15 @@ We expect to release up to three datasets during the course of the challenge, ra
 
 ### Metrics
 
-Participants will be scored using a variety of metrics. These will include a binary classifier trained on ``truth" GEANT4 vs.\ generated shower images, a binary classifier trained on a set of high level features (layer energies, shower shape variables), and metrics derived from histogram differences and chi-squared type measures. Finally, methods will be judged based on their training time, calorimeter shower generation time and memory usage. It is expected that there will not necessarily be a single clear winner, but different methods will have their pros and cons. A link to the full set of metrics will be provided here [link] 
+<p style='text-align: justify;'>
+Participants will be scored using a variety of metrics. These will include a binary classifier trained on <q>truth</q> GEANT4 vs. generated shower images, a binary classifier trained on a set of high level features (layer energies, shower shape variables), and metrics derived from histogram differences and chi-squared type measures. Finally, methods will be judged based on their training time, calorimeter shower generation time and memory usage. It is expected that there will not necessarily be a single clear winner, but different methods will have their pros and cons. A link to the full set of metrics will be provided here [link]. 
+</p>
 
 ### Timeline
 
+<p style='text-align: justify;'>
 The challenge will conclude approximately 1 month before the next ML4Jets conference (currently tentatively scheduled for the week of December 5, 2022). Results of the challenge will be presented at ML4Jets, and the challenge will culminate in a community paper documenting the various approaches and their outcomes. 
+</p>
 
 Please do not hesitate to ask questions: we will use the [ML4Jets slack channel](https://join.slack.com/t/ml4jets/shared_invite/enQtNDc4MjAzODE0NDIyLTU0MGIxNmZlY2E4MzY2YzEwNGI2MGI5MzJmMzEwODVjYWY4MDFhMzcyODYyMDViZTY4MTg2MWM2N2Y1YjBhOWM) to discuss technical questions related to this challenge. You are also encouraged to sign up for the mailing list [GOOGLE GROUP]
 for infrequent announcements and communications.
