@@ -7,7 +7,7 @@ This is the homepage for the Fast Calorimeter Simulation Data Challenge. The pur
 </p>
 
 <p style='text-align: justify;'>
-This challenge is modeled after previous, highly successful data challenges in HEP -- the top tagging community challenge and the [LHC Olympics 2020 anomaly detection challenge](https://lhco2020.github.io/homepage/). 
+This challenge is modeled after previous, highly successful data challenges in HEP &ndash; the <a href='https://arxiv.org/abs/1902.09914'>top tagging community challenge</a> and the <a href='https://arxiv.org/abs/2101.08320'>LHC Olympics 2020 anomaly detection challenge</a>. 
 </p>
 
 ### Datasets
