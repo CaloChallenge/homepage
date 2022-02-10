@@ -6,7 +6,9 @@
 This is the homepage for the Fast Calorimeter Simulation Data Challenge. The purpose of this challenge is to spur the development and benchmarking of fast and high-fidelity calorimeter shower generation. Currently, generating calorimeter showers of elementary particles (electrons, photons, pions, ...) using GEANT4 is a major computational bottleneck at the LHC, and it is forecast to overwhelm the computing budget of the LHC in the near future. Therefore there is an urgent need to develop GEANT4 emulators that are both fast (computationally lightweight) and accurate. It is expected that participants will make use of cutting-edge techniques in generative modeling with deep learning, e.g. GANs, VAEs and normalizing flows. 
 </p>
 
-This challenge is modeled after previous, highly successful data challenges in HEP -- the top tagging community challenge and the LHC Olympics 2020 anomaly detection challenge [LINKS]. 
+<p style='text-align: justify;'>
+This challenge is modeled after previous, highly successful data challenges in HEP -- the top tagging community challenge and the [LHC Olympics 2020 anomaly detection challenge](https://lhco2020.github.io/homepage/). 
+</p>
 
 ### Datasets
 
