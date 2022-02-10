@@ -30,7 +30,7 @@ for infrequent announcements and communications.
 
 Good luck!
 
-_Michele Faucci Gianelli, Gregor Kasieczka, Claudius Krause, Ben Nachman, Dalila Salamani and David Shih_
+_Michele Faucci Gianelli, Gregor Kasieczka, Claudius Krause, Ben Nachman, Dalila Salamani, David Shih and Anna Zaborowska_
 
 
 
