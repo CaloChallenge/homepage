@@ -20,7 +20,7 @@ We expect to release up to three datasets during the course of the challenge, ra
 
 - Dataset 2: the calorimeter used to produce this GEANT4 dataset is a setup of concentric cylinders (layers). Each layer consists of active (silicon) and passive (tungesten) material. The number of readout cells is **RxPxZ=9x16x45=6480**, representing the cylindrical segmentation **(<sub>r</sub><sub>&phi</sub><sub>z</sub>)**.  
 
-- Dataset 3 : the calorimeter used to produce this GEANT4 dataset is a also a setup of concentric cylinders of silicon and tungesten material. The number of readout cells is **RxPxZ=18x50x45=40500**, representing the cylindrical segmentation **(<sub>r;</sub><sub>&phi;</sub><sub>z;</sub>)**. This dataset was produced using the [Par04 Geant4 example](https://gitlab.cern.ch/geant4/geant4/-/tree/master/examples/extended/parameterisations/Par04).
+- Dataset 3 : the calorimeter used to produce this GEANT4 dataset is a also a setup of concentric cylinders of silicon and tungesten material. The number of readout cells is **RxPxZ=18x50x45=40500**, representing the cylindrical segmentation **(<sub>r;</sub><sub>&phi;</sub><sub>;z</sub>)**. This dataset was produced using the [Par04 Geant4 example](https://gitlab.cern.ch/geant4/geant4/-/tree/master/examples/extended/parameterisations/Par04).
 
 
 ### Metrics
