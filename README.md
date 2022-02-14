@@ -16,10 +16,13 @@ This challenge is modeled after previous, highly successful data challenges in H
 We expect to release up to three datasets during the course of the challenge, ranging in difficulty from <q>easy</q> to <q>medium</q> to <q>hard</q>. The difficulty is set by the dimensionality of the calorimeter showers (the number layers and the number of voxels in each layer). The <q>hard</q> Dataset 3 also includes incoming particles at different angles.
 </p>
 
+<p style='text-align: justify;'>
 - Dataset 1: The ATLAS GEANT4 open datasets [link](http://opendata-qa.cern.ch/record/15012). There are two groups of datasets, one for charged pions and one for photons. Each set consists of 15 csv files corresponsing to 15 energies from 256 MeV up to 4TeV produced in powers of two. Each dataset contains the voxelised shower information obtained from single particles  produced at the calorimeter surface in the η range (0.2-0.25) and simulated in the ATLAS detector. 10k events are available in each sample with the exception of those at higher energies that have a lower statistics. These samples were used to train the corresponding two GANs presented in the AtlFast3 paper [SIMU-2018-04](https://atlas.web.cern.ch/Atlas/GROUPS/PHYSICS/PAPERS/SIMU-2018-04/) and in the FastCaloGAN note [ATL-SOFT-PUB-2020-006](https://atlas.web.cern.ch/Atlas/GROUPS/PHYSICS/PUBNOTES/ATL-SOFT-PUB-2020-006/).
 
+ <p style='text-align: justify;'>
 - Dataset 2: the calorimeter used to produce this GEANT4 dataset is a setup of concentric cylinders (layers). Each layer consists of active (silicon) and passive (tungesten) material. The number of readout cells is **RxPxZ=9x16x45=6480**, representing the cylindrical segmentation **(<sub>r;</sub><sub>&phi;</sub><sub>;z</sub>)**. The dataset consists of eletron particles with energies ranging from 1 GeV to 1024 GeV (in powers of 2). 
 
+<p style='text-align: justify;'>
 - Dataset 3 : the calorimeter used to produce this GEANT4 dataset is a also a setup of concentric cylinders of silicon and tungesten material. The number of readout cells is **RxPxZ=18x50x45=40500**, representing the cylindrical segmentation **(<sub>r;</sub><sub>&phi;</sub><sub>;z</sub>)**. The dataset consists of eletron particles with energies ranging from 1 GeV to 1024 GeV (in powers of 2) and incident angles ranging from 50 to 90&deg; in a step of 10&deg; (90&deg; angle indicates a particle entering the detector perpendicularly). This dataset was produced using the [Par04 Geant4 example](https://gitlab.cern.ch/geant4/geant4/-/tree/master/examples/extended/parameterisations/Par04).
 
 
