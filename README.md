@@ -16,7 +16,7 @@ This challenge is modeled after previous, highly successful data challenges in H
 We expect to release up to three datasets during the course of the challenge, ranging in difficulty from <q>easy</q> to <q>medium</q> to <q>hard</q>. The difficulty is set by the dimensionality of the calorimeter showers (the number layers and the number of voxels in each layer). The <q>hard</q> Dataset 3 also includes incoming particles at different angles.
 </p>
 
-<p style='text-align: justify;'>
+<p style='text-align'>
 - Dataset 1: The ATLAS GEANT4 open datasets [link](http://opendata-qa.cern.ch/record/15012). There are two groups of datasets, one for charged pions and one for photons. Each set consists of 15 csv files corresponsing to 15 energies from 256 MeV up to 4TeV produced in powers of two. Each dataset contains the voxelised shower information obtained from single particles  produced at the calorimeter surface in the η range (0.2-0.25) and simulated in the ATLAS detector. 10k events are available in each sample with the exception of those at higher energies that have a lower statistics. These samples were used to train the corresponding two GANs presented in the AtlFast3 paper [SIMU-2018-04](https://atlas.web.cern.ch/Atlas/GROUPS/PHYSICS/PAPERS/SIMU-2018-04/) and in the FastCaloGAN note [ATL-SOFT-PUB-2020-006](https://atlas.web.cern.ch/Atlas/GROUPS/PHYSICS/PUBNOTES/ATL-SOFT-PUB-2020-006/).
 </p>
 
