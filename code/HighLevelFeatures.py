@@ -177,19 +177,19 @@ class HighLevelFeatures:
         return ret
 
     def DrawHistoEtot(self, filename=None):
-        pass
+        raise NotImplementedError()
 
     def DrawHistoElayers(self, filename=None):
-        pass
+        raise NotImplementedError()
 
     def DrawHistoECEtas(self, filename=None):
-        pass
+        raise NotImplementedError()
 
     def DrawHistoECPhis(self, filename=None):
-        pass
+        raise NotImplementedError()
 
     def DrawHistoWidthEtas(self, filemane=None):
-        pass
+        raise NotImplementedError()
 
     def DrawHistoWidthPhis(self, filename=None):
-        pass
+        raise NotImplementedError()
