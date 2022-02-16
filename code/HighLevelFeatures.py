@@ -1,96 +1,195 @@
-import numpy as np
+# pylint: disable=invalid-name
+"""
+    Class that handles the specific binning geometry based on the provided file
+    and computes all relevant high-level features
+"""
+import os
 import math
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm as LN
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
 
 from XMLHandler import XMLHandler
 
 class HighLevelFeatures:
+    """ Computes all high-level features based on the specific geometry stored in the binning file
+    """
+    def __init__(self, particle, filename='binning.xml'):
+        """ particle (str): particle to be considered
+            filename (str): path/to/binning.xml of the specific detector geometry.
+            particle is redundant, as it is also part of the binning file, however, it serves as a
+            crosscheck to ensure the correct binning is used.
+        """
+        xml = XMLHandler(particle, filename=filename)
+        self.bin_edges = xml.GetBinEdges()
+        self.eta_all_layers, self.phi_all_layers = xml.GetEtaPhiAllLayers()
+        self.relevantLayers = xml.GetRelevantLayers()
+        self.layersBinnedInAlpha = xml.GetLayersWithBinningInAlpha()
+        self.r_edges = [redge for redge in xml.r_edges if len(redge) > 1]
+        self.num_alpha = [len(xml.alphaListPerLayer[idx][0]) for idx, redge in \
+                          enumerate(xml.r_edges) if len(redge) > 1]
+        self.E_tot = None
+        self.E_layers = {}
+        self.EC_etas = {}
+        self.EC_phis = {}
+        self.width_etas = {}
+        self.width_phis = {}
+        self.particle = particle
 
-  def __init__(self, filename='binning.xml'):
+    def _calculate_EC(self, eta, phi, energy):
+        eta_EC = (eta * energy).sum(axis=-1)/(energy.sum(axis=-1)+1e-16)
+        phi_EC = (phi * energy).sum(axis=-1)/(energy.sum(axis=-1)+1e-16)
+        return eta_EC, phi_EC
 
-    xml = XMLHandler(filename=filename)
-    self.bin_edges = xml.GetBinEdges()
-    self.eta_all_layers, self.phi_all_layers = xml.GetEtaPhiAllLayers()
-    self.relevantLayers = xml.GetRelevantLayers()
-    self.layersBinnedInAlpha = xml.GetLayersWithBinningInAlpha()
+    def _calculate_Widths(self, eta, phi, energy):
+        eta_width = (eta * eta * energy).sum(axis=-1)/(energy.sum(axis=-1)+1e-16)
+        phi_width = (phi * phi * energy).sum(axis=-1)/(energy.sum(axis=-1)+1e-16)
+        return eta_width, phi_width
 
-  def calculate_EC(self, eta, phi, energy):
-      eta_EC = (eta * energy).sum(axis=0)/energy.sum(axis=0)
-      phi_EC = (phi * energy).sum(axis=0)/energy.sum(axis=0)
-      return eta_EC, phi_EC
+    def GetECandWidths(self, eta_layer, phi_layer, energy_layer):
+        """ Computes center of energy in eta and phi as well as their widths """
+        eta_EC, phi_EC = self._calculate_EC(eta_layer, phi_layer, energy_layer)
+        eta_width, phi_width = self._calculate_Widths(eta_layer, phi_layer, energy_layer)
+        # The following checks are needed to assure a positive argument to the sqrt,
+        # if there is very little energy things can go wrong
+        eta_width = np.sqrt((eta_width - eta_EC**2).clip(min=0.))
+        phi_width = np.sqrt((phi_width - phi_EC**2).clip(min=0.))
+        return eta_EC, phi_EC, eta_width, phi_width
 
-  def calculate_Widths(self, eta, phi, energy):
-      eta_width = (eta * eta * energy).sum(axis=0)/energy.sum(axis=0)
-      phi_width = (phi * phi * energy).sum(axis=0)/energy.sum(axis=0)
-      return eta_width, phi_width
+    def EvaluateFeatures(self, data):
+        """ Computes all high-level features for the given data """
+        self.E_tot = data.sum(axis=-1)
 
-  def GetECandWidths(self, eta_layer, phi_layer, energy_layer):
-    eta_EC = 0
-    phi_EC = 0
-    eta_width = 0
-    phi_width = 0
+        for l in self.relevantLayers:
+            E_layer = data[:, self.bin_edges[l]:self.bin_edges[l+1]].sum(axis=-1)
+            self.E_layers[l] = E_layer
 
-    if sum(energy_layer) != 0:
-      eta_EC, phi_EC = self.calculate_EC(eta_layer, phi_layer, energy_layer)
-      eta_width, phi_width = self.calculate_Widths(eta_layer, phi_layer, energy_layer)
-      # The following checks are needed to assure a positive argument to the sqrt, if there is very little energy things can go wrong
-      if (eta_EC * eta_EC <= eta_width):
-        eta_width = math.sqrt(eta_width - eta_EC * eta_EC)
-      if (phi_EC * phi_EC <= phi_width):
-        phi_width = math.sqrt(phi_width - phi_EC * phi_EC)
+        for l in self.relevantLayers:
 
-    return eta_EC, phi_EC, eta_width, phi_width
+            if l in self.layersBinnedInAlpha:
+                self.EC_etas[l], self.EC_phis[l], self.width_etas[l], \
+                    self.width_phis[l] = self.GetECandWidths(
+                        self.eta_all_layers[l],
+                        self.phi_all_layers[l],
+                        data[:, self.bin_edges[l]:self.bin_edges[l+1]])
 
-  def EvaluateFeatures(self, data):
-    self.E_tot = data.sum(axis=-1)
+    def _DrawShower(self, data, filename, title):
+        """ Draws the shower in all layers """
+        if self.particle == 'electron':
+            figsize = (10, 20)
+        else:
+            figsize = (len(self.relevantLayers)*2, 3)
+        fig = plt.figure(figsize=figsize, dpi=200)
+        # to smoothen the angular bins (must be multiple of self.num_alpha):
+        num_splits = 400
+        layer_boundaries = np.unique(self.bin_edges)
+        max_r = 0
+        for radii in self.r_edges:
+            if radii[-1] > max_r:
+                max_r = radii[-1]
+        vmax = data.max()
+        for layer in range(len(self.r_edges)):
+            radii = np.array(self.r_edges[layer])
+            if self.particle != 'electron':
+                radii[1:] = np.log(radii[1:])
+            theta, rad = np.meshgrid(2.*np.pi*np.arange(num_splits+1)/ num_splits, radii)
+            pts_per_angular_bin = int(num_splits / self.num_alpha[layer])
 
-    self.E_layers = {}
-    for l in self.relevantLayers:
-      E_layer = data[:, self.bin_edges[l]:self.bin_edges[l+1]].sum(axis=-1)
-      self.E_layers[l] = E_layer
+            data_reshaped = data[layer_boundaries[layer]:layer_boundaries[layer+1]].reshape(
+                int(self.num_alpha[layer]), -1)
+            data_repeated = np.repeat(data_reshaped, (pts_per_angular_bin), axis=0)
+            if self.particle == 'electron':
+                ax = plt.subplot(9, 5, layer+1, polar=True)
+            else:
+                ax = plt.subplot(1, len(self.r_edges), layer+1, polar=True)
+            ax.grid(False)
+            pcm = ax.pcolormesh(theta, rad, data_repeated.T+1e-16, norm=LN(vmin=1e-2, vmax=vmax))
+            ax.axes.get_xaxis().set_visible(False)
+            ax.axes.get_yaxis().set_visible(False)
+            if self.particle == 'electron':
+                ax.set_rmax(max_r)
+            else:
+                ax.set_rmax(np.log(max_r))
+            ax.set_title('Layer '+str(layer))
+        if self.particle == 'electron':
+            axins = inset_axes(fig.get_axes()[-3], width="500%",
+                               height="15%", loc='lower center', bbox_to_anchor=(0., -0.2, 1, 1),
+                               bbox_transform=fig.get_axes()[-3].transAxes,
+                               borderpad=0)
+        else:
+            wdth = str(len(self.r_edges)*100)+'%'
+            axins = inset_axes(fig.get_axes()[len(self.r_edges)//2], width=wdth,
+                               height="15%", loc='lower center', bbox_to_anchor=(0., -0.2, 1, 1),
+                               bbox_transform=fig.get_axes()[len(self.r_edges)//2].transAxes,
+                               borderpad=0)
+        cbar = plt.colorbar(pcm, cax=axins, fraction=0.2, orientation="horizontal")
+        cbar.set_label(r'Energy (MeV)', y=0.83, fontsize=12)
+        if title is not None:
+            plt.gcf().suptitle(title)
+        if filename is not None:
+            plt.savefig(filename, facecolor='white')
+        plt.show()
+        return fig
 
-    self.EC_etas = {}
-    self.EC_phis = {}
-    self.width_etas = {}
-    self.width_phis = {}
-    for l in self.layersBinnedInAlpha:
-      #EC_eta = array( 'f', [ 0 ] )
-      #EC_phi = array( 'f', [ 0 ] )
-      #width_eta = array( 'f', [ 0 ] )
-      #width_phi = array( 'f', [ 0 ] )
-      #EC_etas[l] = EC_eta
-      #EC_phis[l] = EC_phi
-      #width_etas[l] = width_eta
-      #width_phis[l] = width_phi
-      self.EC_etas[l] = np.zeros(len(data))
-      self.EC_phis[l] = np.zeros(len(data))
-      self.width_etas[l] = np.zeros(len(data))
-      self.width_phis[l] = np.zeros(len(data))
+    def GetEtot(self):
+        """ returns total energy of the showers """
+        return self.E_tot
 
-    for i in range (data.shape[0]):
-      for l in self.relevantLayers:
-        #layer_energy = data[i, self.bin_edges[l]:self.bin_edges[l+1]].sum(axis=0)
+    def GetElayers(self):
+        """ returns energies of the showers deposited in each layer """
+        return self.E_layers
 
-        #self.E_tot[0] += layer_energy
-        #self.E_layers[l][0] = layer_energy
+    def GetECEtas(self):
+        """ returns dictionary of centers of energy in eta for each layer """
+        return self.EC_etas
 
-        for l in range(0, 24):
-          if l in self.layersBinnedInAlpha:
-            self.EC_etas[l][i], self.EC_phis[l][i], self.width_etas[l][i], self.width_phis[l][i] = self.GetECandWidths(self.eta_all_layers[l], self.phi_all_layers[l], data[i, self.bin_edges[l]:self.bin_edges[l+1]])
+    def GetECPhis(self):
+        """ returns dictionary of centers of energy in phi for each layer """
+        return self.EC_phis
 
-  def GetEtot(self):
-    return self.E_tot
+    def GetWidthEtas(self):
+        """ returns dictionary of widths of centers of energy in eta for each layer """
+        return self.width_etas
 
-  def GetElayers(self):
-    return self.E_layers
+    def GetWidthPhis(self):
+        """ returns dictionary of widths of centers of energy in phi for each layer """
+        return self.width_phis
 
-  def GetECetas(self):
-    return self.EC_etas
+    def DrawAverageShower(self, data, filename=None, title=None):
+        """ plots average of provided showers """
+        ret = self._DrawShower(data.mean(axis=0), filename=filename, title=title)
+        return ret
 
-  def GetECphis(self):
-    return self.EC_phis
+    def DrawSingleShower(self, data, filename=None, title=None):
+        """ plots all provided showers after each other """
+        ret = []
+        if len(data.shape) == 1:
+            data = data.reshape(1, -1)
+        for num, shower in enumerate(data):
+            if filename is not None:
+                local_name, local_ext = os.path.splitext(filename)
+                local_name += '_{}'.format(num) + local_ext
+            else:
+                local_name = None
+            ret.append(self._DrawShower(shower, filename=local_name, title=title))
+        return ret
 
-  def GetWidthEtas(self):
-    return self.width_etas
+    def DrawHistoEtot(self, filename=None):
+        pass
 
-  def GetWidthPhis(self):
-    return self.width_phis
+    def DrawHistoElayers(self, filename=None):
+        pass
+
+    def DrawHistoECEtas(self, filename=None):
+        pass
+
+    def DrawHistoECPhis(self, filename=None):
+        pass
+
+    def DrawHistoWidthEtas(self, filemane=None):
+        pass
+
+    def DrawHistoWidthPhis(self, filename=None):
+        pass
