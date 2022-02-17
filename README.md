@@ -18,7 +18,7 @@ The challenge offers three datasets, ranging in difficulty from <q>easy</q> to <
 <p style='text-align: justify;'>
 Each dataset has the same general format. The detector geometry is of cylindrical shape with particles propagating along the z-axis. The segmentation along the z-axis is called layer. Each layer has bins along the radial direction and some of them have bins in the angle &alpha;. The number of layers and the number of bins in r and &alpha; is stored in the binning .xml files and will be read out by the HighLevelFeatures class of helper functions. The coordinates &Delta;&phi; and &Delta;&eta; correspond to the x- and y axis of the cylindrical coordinates.   
 </p>
-<img src="https://github.com/CaloChallenge/homepage/blob/main/coordsys.png" width="50%" align="center"/>
+<img src="https://github.com/CaloChallenge/homepage/blob/main/coordsys.jpg" width="50%" align="center"/>
 <p style='text-align: justify;'>
 Each dataset comes as one or more .hdf5 files that were written with python's h5py module using gzip compression. [dataset names, voxel order]
 </p>
