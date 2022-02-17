@@ -16,9 +16,9 @@ This challenge is modeled after previous, highly successful data challenges in H
 The challenge offers three datasets, ranging in difficulty from <q>easy</q> to <q>medium</q> to <q>hard</q>. The difficulty is set by the dimensionality of the calorimeter showers (the number layers and the number of voxels in each layer). The <q>hard</q> Dataset 3 also includes incoming particles at different angles.
 </p>
 <p style='text-align: justify;'>
-Each dataset has the same general format. The detector geometry is of cylindrical shape with particles propagating along the z-axis. The segmentation along the z-axis is called layer. Each layer has bins along the radial direction and some of them have bins in the angle &alpha;. The number of layers and the number of bins in r and &alpha; is stored in the binning .xml files and will be read out by the HighLevelFeatures class of helper functions. The coordinates &Delta;&phi; and &Delta;&eta; correspond to the x- and y axis of the cylindrical coordinates.   
+Each dataset has the same general format. The detector geometry is of cylindrical shape with particles propagating along the z-axis. The segmentation along the z-axis is called layer. Each layer has bins along the radial direction and some of them have bins in the angle &alpha;. The number of layers and the number of bins in r and &alpha; is stored in the binning .xml files and will be read out by the HighLevelFeatures class of helper functions. The coordinates &Delta;&phi; and &Delta;&eta; correspond to the x- and y axis of the cylindrical coordinates. The image below shows a 3d view of a geometry with 3 layers, with each layer having 3 bins in radial and 6 bins in angular direction. The right image shows the front view of the geometry, as seen along the z axis.
 </p>
-<img src="https://github.com/CaloChallenge/homepage/blob/main/coordsys.jpg" width="50%" align="center"/>
+<img src="https://calochallenge.github.io/homepage/coordsys.jpg" width="50%" align="center"/>
 <p style='text-align: justify;'>
 Each dataset comes as one or more .hdf5 files that were written with python's h5py module using gzip compression. [dataset names, voxel order]
 </p>
