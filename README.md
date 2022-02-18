@@ -36,7 +36,15 @@ Files containing the detector binning information for each dataset as well as Py
 ### Metrics
 
 <p style='text-align: justify;'>
-Participants will be scored using a variety of metrics. These will include a binary classifier trained on <q>truth</q> GEANT4 vs. generated shower images, a binary classifier trained on a set of high level features (layer energies, shower shape variables), and metrics derived from histogram differences and chi-squared type measures. Finally, methods will be judged based on their training time, calorimeter shower generation time and memory usage. It is expected that there will not necessarily be a single clear winner, but different methods will have their pros and cons. A link to the full set of metrics will be provided here [link]. 
+Participants will be scored using a variety of metrics. We will include more detailed descriptions of them closer to the end of the challenge. Metrics will include:
+</p>
+- A binary classifier trained on <q>truth</q> GEANT4 vs. generated shower images.
+- A binary classifier trained on a set of high-level features (like layer energies, shower shape variables).
+- A chi-squared type measure derived from histogram differences of high-level features.
+- Training time, calorimeter shower generation time and memory usage.
+- Interpolation capabilities: leave out one energy in training and generate samples at that energy after training. 
+<p style='text-align: justify;'>
+It is expected that there will not necessarily be a single clear winner, but different methods will have their pros and cons. Scripts to perform the evaluation will be made available on the <a href="https://github.com/CaloChallenge/homepage/tree/main/code">Github page</a>. 
 </p>
 
 ### Timeline
