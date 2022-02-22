@@ -31,7 +31,7 @@ Each CaloChallenge dataset comes as one or more .hdf5 files that were written wi
 - <p style='text-align: justify;'> <b>Dataset 3</b> can be downloaded from Zenodo[fill link!]. It consists of 5 files, one for each incident angle (from 50 to 90&deg; in steps of 10&deg;). A 90&deg; angle indicates a particle entering the detector perpendicularly. Each file contains GEANT4-simulated eletron showers with energies ranging from 1 GeV to 1024 GeV (in powers of 2). The detector geometry is similar to dataset 2, but has a much higher granularity. Each of the 45 layer has now 18 radial and 50 angular bins, totalling 18x50x45=40500 voxels. This dataset was produced using the <a href="https://gitlab.cern.ch/geant4/geant4/-/tree/master/examples/extended/parameterisations/Par04">Par04 Geant4 example</a>. </p>
 
 <p style='text-align: justify;'>
-Files containing the detector binning information for each dataset as well as Python scripts that load them can be found on our <a href="https://github.com/CaloChallenge/homepage/tree/main/code">Github page</a>. The Jupyter notebook HighLevelFeatures.ipynb shows how each dataset can be loaded, how the helper class is initialized with the binning.xml files, how high-level features can be computed, and how showers can be visualized. Further high-level features and histograms might be added in the next weeks.</p>
+Files containing the detector binning information for each dataset as well as Python scripts that load them can be found on our <a href="https://github.com/CaloChallenge/homepage/tree/main/code">Github page</a>. This <a href="https://github.com/CaloChallenge/homepage/blob/main/code/HighLevelFeatures.ipynb" Jupyter notebook </a> shows how each dataset can be loaded, how the helper class is initialized with the binning.xml files, how high-level features can be computed, and how showers can be visualized. Further high-level features and histograms might be added in the next weeks.</p>
 
 
 ### Metrics
@@ -54,7 +54,7 @@ It is expected that there will not necessarily be a single clear winner, but dif
 The challenge will conclude approximately 1 month before the next ML4Jets conference (currently tentatively scheduled for the week of December 5, 2022). Results of the challenge will be presented at ML4Jets, and the challenge will culminate in a community paper documenting the various approaches and their outcomes. 
 </p>
 
-Please do not hesitate to ask questions: we will use the [ML4Jets slack channel](https://join.slack.com/t/ml4jets/shared_invite/enQtNDc4MjAzODE0NDIyLTU0MGIxNmZlY2E4MzY2YzEwNGI2MGI5MzJmMzEwODVjYWY4MDFhMzcyODYyMDViZTY4MTg2MWM2N2Y1YjBhOWM) to discuss technical questions related to this challenge. You are also encouraged to sign up for the mailing list [GOOGLE GROUP]
+Please do not hesitate to ask questions: we will use the [ML4Jets slack channel](https://join.slack.com/t/ml4jets/shared_invite/enQtNDc4MjAzODE0NDIyLTU0MGIxNmZlY2E4MzY2YzEwNGI2MGI5MzJmMzEwODVjYWY4MDFhMzcyODYyMDViZTY4MTg2MWM2N2Y1YjBhOWM) to discuss technical questions related to this challenge. You are also encouraged to sign up for the [Google groups mailing list] (https://groups.google.com/g/calochallenge)
 for infrequent announcements and communications.
 
 Good luck!
