@@ -1,13 +1,17 @@
-## Welcome to the home of the Fast Calorimeter Simulation Challenge 2022!
+<!--## Welcome to the home of the Fast Calorimeter Simulation Challenge 2022!-->
 
 <!-- ![img](Banner_grey.jpg) -->
 
 <p style='text-align: justify;'>
-This is the <a href="https://calochallenge.github.io/homepage/">homepage</a> for the Fast Calorimeter Simulation Data Challenge. The purpose of this challenge is to spur the development and benchmarking of fast and high-fidelity calorimeter shower generation. Currently, generating calorimeter showers of elementary particles (electrons, photons, pions, ...) using GEANT4 is a major computational bottleneck at the LHC, and it is forecast to overwhelm the computing budget of the LHC in the near future. Therefore there is an urgent need to develop GEANT4 emulators that are both fast (computationally lightweight) and accurate. It is expected that participants will make use of cutting-edge techniques in generative modeling with deep learning, e.g. GANs, VAEs and normalizing flows. 
+Welcome to the home of the first-ever Fast Calorimeter Simulation Challenge! 
 </p>
 
 <p style='text-align: justify;'>
-This challenge is modeled after previous, highly successful data challenges in HEP &ndash; the <a href='https://arxiv.org/abs/1902.09914'>top tagging community challenge</a> and the <a href='https://arxiv.org/abs/2101.08320'>LHC Olympics 2020 anomaly detection challenge</a>. 
+The purpose of this challenge is to spur the development and benchmarking of fast and high-fidelity calorimeter shower generation using deep learning methods. Currently, generating calorimeter showers of interacting particles (electrons, photons, pions, ...) using GEANT4 is a major computational bottleneck at the LHC, and it is forecast to overwhelm the computing budget of the LHC experiments in the near future. Therefore there is an urgent need to develop GEANT4 emulators that are both fast (computationally lightweight) and accurate. The LHC collaborations have been developing fast simulation methods for some time, and the hope of this challenge is to directly compare new deep learning approaches on common benchmarks. It is expected that participants will make use of cutting-edge techniques in generative modeling with deep learning, e.g. GANs, VAEs and normalizing flows. 
+</p>
+
+<p style='text-align: justify;'>
+This challenge is modeled after two previous, highly successful data challenges in HEP &ndash; the <a href='https://arxiv.org/abs/1902.09914'>top tagging community challenge</a> and the <a href='https://arxiv.org/abs/2101.08320'>LHC Olympics 2020 anomaly detection challenge</a>. 
 </p>
 
 ### Datasets
@@ -16,27 +20,27 @@ This challenge is modeled after previous, highly successful data challenges in H
 The challenge offers three datasets, ranging in difficulty from <q>easy</q> to <q>medium</q> to <q>hard</q>. The difficulty is set by the dimensionality of the calorimeter showers (the number layers and the number of voxels in each layer). The <q>hard</q> Dataset 3 also includes incoming particles at different angles.
 </p>
 <p style='text-align: justify;'>
-Each dataset has the same general format. The detector geometry consists of concentric cylinders with particles propagating along the z-axis. The segmentation along the z-axis is called layer. Each layer has bins along the radial direction and some of them have bins in the angle &alpha;. The number of layers and the number of bins in r and &alpha; is stored in the binning .xml files and will be read out by the HighLevelFeatures class of helper functions. The coordinates &Delta;&phi; and &Delta;&eta; correspond to the x- and y axis of the cylindrical coordinates. The image below shows a 3d view of a geometry with 3 layers, with each layer having 3 bins in radial and 6 bins in angular direction. The right image shows the front view of the geometry, as seen along the z axis.
+Each dataset has the same general format. The detector geometry consists of concentric cylinders with particles propagating along the z-axis. The detector is segmented along the z-axis into discrete layers. Each layer has bins along the radial direction and some of them have bins in the angle &alpha;. The number of layers and the number of bins in r and &alpha; is stored in the binning .xml files and will be read out by the HighLevelFeatures class of helper functions. The coordinates &Delta;&phi; and &Delta;&eta; correspond to the x- and y axis of the cylindrical coordinates. The image below shows a 3d view of a geometry with 3 layers, with each layer having 3 bins in radial and 6 bins in angular direction. The right image shows the front view of the geometry, as seen along the z axis.
 </p>
 <img src="https://calochallenge.github.io/homepage/coordsys.jpg" width="100%" align="center"/>
 <p style='text-align: justify;'>
 Each CaloChallenge dataset comes as one or more .hdf5 files that were written with python's h5py module using gzip compression. Within each file, showers of the same incident energy are grouped together to a hdf5-dataset of the name <q>data_XXXX</q>, with XXXX being the incident energy in MeV. Each of these hdf5-datasets has the shape (num_events, num_voxels), where the energy depositions of each voxel (in MeV) are flattened. The mapping of array index to voxel location is done at the order (radial bins, angular bins, layer), so the first entries correspond to the radial bins of the first angular slice in the first layer. Then, the radial bins of the next angular slice of the first layer follow, ... 
 </p>
 
-- <p style='text-align: justify;'> <b>Dataset 1</b> can be downloaded from Zenodo[fill link!]. It is based on the ATLAS GEANT4 open datasets that was published <a href="http://opendata-qa.cern.ch/record/15012">here</a>. There are two groups of datasets, one for photons and one for charged pions. Each set consists of 15 energies from 256 MeV up to 4 TeV produced in powers of two. Each dataset contains the voxelised shower information obtained from single particles  produced at the calorimeter surface in the &eta; range (0.2-0.25) and simulated in the ATLAS detector. 10k events are available in each sample with the exception of those at higher energies that have a lower statistics. These samples were used to train the corresponding two GANs presented in the AtlFast3 paper <a href="https://atlas.web.cern.ch/Atlas/GROUPS/PHYSICS/PAPERS/SIMU-2018-04/">SIMU-2018-04</a> and in the FastCaloGAN note <a href="https://atlas.web.cern.ch/Atlas/GROUPS/PHYSICS/PUBNOTES/ATL-SOFT-PUB-2020-006/">ATL-SOFT-PUB-2020-006</a>. The number of radial and angular bins varies from layer to layer and is also different for photons and pions, resulting in 368 voxels for photons and 533 for pions.</p>
+- <p style='text-align: justify;'> <b>Dataset 1</b> can be downloaded from <a href="https://doi.org/10.5281/zenodo.6234055">Zenodo with DOI /10.5281/zenodo.6234055</a>. It is based on the ATLAS GEANT4 open datasets that were published <a href="http://opendata-qa.cern.ch/record/15012">here</a>. There are two groups of datasets, one for photons and one for charged pions. Each set consists of 15 energies from 256 MeV up to 4 TeV produced in powers of two. Each dataset contains the voxelised shower information obtained from single particles  produced at the calorimeter surface in the &eta; range (0.2-0.25) and simulated in the ATLAS detector. 10k events are available in each sample with the exception of those at higher energies that have a lower statistics. These samples were used to train the corresponding two GANs presented in the AtlFast3 paper <a href="https://atlas.web.cern.ch/Atlas/GROUPS/PHYSICS/PAPERS/SIMU-2018-04/">SIMU-2018-04</a> and in the FastCaloGAN note <a href="https://atlas.web.cern.ch/Atlas/GROUPS/PHYSICS/PUBNOTES/ATL-SOFT-PUB-2020-006/">ATL-SOFT-PUB-2020-006</a>. The number of radial and angular bins varies from layer to layer and is also different for photons and pions, resulting in 368 voxels for photons and 533 for pions.</p>
 
-- <p style='text-align: justify;'> <b>Dataset 2</b> can be downloaded from Zenodo[fill link!]. It consists of a single file with GEANT4-simulated showers of eletrons with energies ranging from 1 GeV to 1024 GeV (in powers of 2). The detector has a  concentric cylinder geometry with 45 layers, where each layer consists of active (silicon) and passive (tungesten) material. Each layer has 144 readout cells, 9 in radial and 16 in angular direction, yielding a total of 9x16x45 = 6480 voxels. There are 10k showers for each energy.  </p>
+- <p style='text-align: justify;'> <b>Dataset 2</b> (COMING SOON) consists of a single file with GEANT4-simulated showers of electrons with energies ranging from 1 GeV to 1024 GeV. The detector has a  concentric cylinder geometry with 45 layers, where each layer consists of active (silicon) and passive (tungesten) material. Each layer has 144 readout cells, 9 in radial and 16 in angular direction, yielding a total of 9x16x45 = 6480 voxels.  </p>
 
-- <p style='text-align: justify;'> <b>Dataset 3</b> can be downloaded from Zenodo[fill link!]. It consists of 5 files, one for each incident angle (from 50 to 90&deg; in steps of 10&deg;). A 90&deg; angle indicates a particle entering the detector perpendicularly. Each file contains GEANT4-simulated eletron showers with energies ranging from 1 GeV to 1024 GeV (in powers of 2). The detector geometry is similar to dataset 2, but has a much higher granularity. Each of the 45 layer has now 18 radial and 50 angular bins, totalling 18x50x45=40500 voxels. This dataset was produced using the <a href="https://gitlab.cern.ch/geant4/geant4/-/tree/master/examples/extended/parameterisations/Par04">Par04 Geant4 example</a>. </p>
+- <p style='text-align: justify;'> <b>Dataset 3</b> (COMING SOON). It consists of 5 files, one for each incident angle (from 50 to 90&deg; in steps of 10&deg;). A 90&deg; angle indicates a particle entering the detector perpendicularly. Each file contains GEANT4-simulated eletron showers with energies ranging from 1 GeV to 1024 GeV. The detector geometry is similar to dataset 2, but has a much higher granularity. Each of the 45 layer has now 18 radial and 50 angular bins, totalling 18x50x45=40500 voxels. This dataset was produced using the <a href="https://gitlab.cern.ch/geant4/geant4/-/tree/master/examples/extended/parameterisations/Par04">Par04 Geant4 example</a>. </p>
 
 <p style='text-align: justify;'>
-Files containing the detector binning information for each dataset as well as Python scripts that load them can be found on our <a href="https://github.com/CaloChallenge/homepage/tree/main/code">Github page</a>. The Jupyter notebook HighLevelFeatures.ipynb shows how each dataset can be loaded, how the helper class is initialized with the binning.xml files, how high-level features can be computed, and how showers can be visualized. Furhter high-level features and histograms might be added in the next weeks.</p>
+Files containing the detector binning information for each dataset as well as Python scripts that load them can be found on our <a href="https://github.com/CaloChallenge/homepage/tree/main/code">Github page</a>. This <a href="https://github.com/CaloChallenge/homepage/blob/main/code/HighLevelFeatures.ipynb"> Jupyter notebook </a> shows how each dataset can be loaded, how the helper class is initialized with the binning.xml files, how high-level features can be computed, and how showers can be visualized. Further high-level features and histograms might be added in the next weeks.</p>
 
 
 ### Metrics
 
 <p style='text-align: justify;'>
-Participants will be scored using a variety of metrics. We will include more detailed descriptions of them closer to the end of the challenge. Metrics will include:
+Participants will be scored using a variety of metrics. We will include more detailed descriptions of them in the coming months. Metrics will include:
 </p>
 - A binary classifier trained on <q>truth</q> GEANT4 vs. generated shower images.
 - A binary classifier trained on a set of high-level features (like layer energies, shower shape variables).
@@ -44,7 +48,7 @@ Participants will be scored using a variety of metrics. We will include more det
 - Training time, calorimeter shower generation time and memory usage.
 - Interpolation capabilities: leave out one energy in training and generate samples at that energy after training. 
 <p style='text-align: justify;'>
-It is expected that there will not necessarily be a single clear winner, but different methods will have their pros and cons. Scripts to perform the evaluation will be made available on the <a href="https://github.com/CaloChallenge/homepage/tree/main/code">Github page</a>. 
+It is expected that there will not necessarily be a single clear winner, but different methods will have their pros and cons. Scripts to perform the evaluation will eventually be made available on the <a href="https://github.com/CaloChallenge/homepage/tree/main/code">Github page</a>. 
 </p>
 
 ### Timeline
@@ -53,8 +57,7 @@ It is expected that there will not necessarily be a single clear winner, but dif
 The challenge will conclude approximately 1 month before the next ML4Jets conference (currently tentatively scheduled for the week of December 5, 2022). Results of the challenge will be presented at ML4Jets, and the challenge will culminate in a community paper documenting the various approaches and their outcomes. 
 </p>
 
-Please do not hesitate to ask questions: we will use the [ML4Jets slack channel](https://join.slack.com/t/ml4jets/shared_invite/enQtNDc4MjAzODE0NDIyLTU0MGIxNmZlY2E4MzY2YzEwNGI2MGI5MzJmMzEwODVjYWY4MDFhMzcyODYyMDViZTY4MTg2MWM2N2Y1YjBhOWM) to discuss technical questions related to this challenge. You are also encouraged to sign up for the mailing list [GOOGLE GROUP]
-for infrequent announcements and communications.
+Please do not hesitate to ask questions: we will use the [ML4Jets slack channel](https://join.slack.com/t/ml4jets/shared_invite/enQtNDc4MjAzODE0NDIyLTU0MGIxNmZlY2E4MzY2YzEwNGI2MGI5MzJmMzEwODVjYWY4MDFhMzcyODYyMDViZTY4MTg2MWM2N2Y1YjBhOWM) to discuss technical questions related to this challenge. You are also encouraged to sign up for the <a href="https://groups.google.com/g/calochallenge"> Google groups mailing list </a> for infrequent announcements and communications.
 
 Good luck!
 
