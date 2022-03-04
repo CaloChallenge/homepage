@@ -130,7 +130,8 @@ class HighLevelFeatures:
             plt.gcf().suptitle(title)
         if filename is not None:
             plt.savefig(filename, facecolor='white')
-        plt.show()
+        else:
+            plt.show()
         return fig
 
     def GetEtot(self):
