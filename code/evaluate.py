@@ -73,13 +73,24 @@ def check_dataset_23(given_file, arg):
             num_features, given_file['showers'].shape[1]))
     return num_events
 
-def extract_shower_and_energy(given_file, arg):
-    """ reads .hdf5 file and returns samples and their energy """
-    return None, None
+def extract_shower_and_energy_single(given_file, arg):
+    """ reads .hdf5 file of dataset 2 or 3 and returns samples and their energy """
+    print("Extracting showers from file...")
+    shower = given_file['showers'][:]
+    energy = given_file['incident_energies'][:]
+    print("Extracting showers from file done.\n")
+    return shower, energy
 
-def plot_avg(showers, arg):
-    """ Plots the averaged showers """
-    pass
+def extract_shower_and_energy_multiple(given_file, arg):
+    """ reads .hdf5 file of dataset 1 and returns samples and their energies """
+    print("Extracting showers from file...")
+    energies = []
+    showers = []
+    for key in given_file.keys():
+        energies.append(float(key[5:]))
+        showers.append(given_file[key][:])
+    print("Extracting showers from file done.\n")
+    return showers, energies
 
 # if classifier is selected, check if data source exist, if not, ask if download is ok
 
@@ -87,10 +98,37 @@ def plot_avg(showers, arg):
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    print(vars(args))
+    #print(vars(args))
 
     source_file = h5py.File(args.input_file, 'r')
 
     check_file(source_file, args)
 
-    shower, energy = extract_shower_and_energy(source_file, args)
+    if not os.path.isdir(args.output_dir):
+        os.makedirs(args.output_dir)
+
+    if args.dataset in ['2', '3']:
+        shower, energy = extract_shower_and_energy_single(source_file, args)
+        hlf = HLF.HighLevelFeatures('electron',
+                                    filename='binning_dataset_{}.xml'.format(args.dataset))
+        if args.mode in ['all', 'avg']:
+            print("Plotting average shower...")
+            _ = hlf.DrawAverageShower(shower,
+                                      filename=os.path.join(args.output_dir,
+                                                            'average_shower_dataset_{}.png'.format(
+                                                                args.dataset)),
+                                      title="Shower average")
+            print("Plotting average shower done.\n")
+    else:
+        showers, energies = extract_shower_and_energy_multiple(source_file, args)
+        hlf = HLF.HighLevelFeatures(args.dataset[2:],
+                                    filename='binning_dataset_1_{}s.xml'.format(args.dataset[2:]))
+        if args.mode in ['all', 'avg']:
+            print("Plotting average showers...")
+            for idx, energy in enumerate(energies):
+                filename = 'average_shower_dataset_{}_E_{}.png'.format(args.dataset, int(energy))
+                _ = hlf.DrawAverageShower(showers[idx],
+                                          filename=os.path.join(args.output_dir, filename),
+                                          title="Average {} shower at E = {} MeV".format(
+                                              args.dataset[2:], int(energy)))
+            print("Plotting average shower done.\n")
