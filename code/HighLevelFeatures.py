@@ -58,7 +58,7 @@ class HighLevelFeatures:
         phi_width = np.sqrt((phi_width - phi_EC**2).clip(min=0.))
         return eta_EC, phi_EC, eta_width, phi_width
 
-    def EvaluateFeatures(self, data):
+    def CalculateFeatures(self, data):
         """ Computes all high-level features for the given data """
         self.E_tot = data.sum(axis=-1)
 
