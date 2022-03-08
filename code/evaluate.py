@@ -22,14 +22,20 @@ import HighLevelFeatures as HLF
 parser = argparse.ArgumentParser(description=('Evaluate calorimeter showers of the '+\
                                               'Fast Calorimeter Challenge 2022.'))
 
-parser.add_argument('--input_file', '-i', help='Name of the input file')
+parser.add_argument('--input_file', '-i', help='Name of the input file to be evaluated.')
 parser.add_argument('--mode', '-m', default='all',
-                    choices=['all', 'avg', 'hist', 'classifier-low', 'classifier-high'],
-                    help='What metric to evaluate.')
+                    choices=['all', 'avg', 'hist-p', 'hist-chi', 'cls-low', 'cls-high'],
+                    help=("What metric to evaluate: " +\
+                          "'avg' plots the shower average;" +\
+                          "'hist-p' plots the histograms;" +\
+                          "'hist-chi' evaluates a chi2 of the histograms;" +\
+                          "'cls-low' trains a classifier on the low-level feautures;" +\
+                          "'cls-high' trains a classifier on the high-level features;" +\
+                          "'all' does the full evaluation, ie all of the above."))
 parser.add_argument('--dataset', '-d', choices=['1-photon', '1-pion', '2', '3'],
                     help='Which dataset is evaluated.')
 parser.add_argument('--output_dir', default='evaluation_results/',
-                    help='Where to store evaluation output files.')
+                    help='Where to store evaluation output files (plots and scores).')
 parser.add_argument('--source_dir', default='source/',
                     help='Folder that contains files required for comparative evaluations.')
 
@@ -73,6 +79,13 @@ def check_dataset_23(given_file, arg):
             num_features, given_file['showers'].shape[1]))
     return num_events
 
+def check_reference(arg):
+    """ checks if reference file for histograms exist """
+    if os.path.exists(os.path.join(args.output_dir, 'reference_{}.hdf5'.format(arg.dataset))):
+        return True
+    else:
+        return False
+
 def extract_shower_and_energy_single(given_file, arg):
     """ reads .hdf5 file of dataset 2 or 3 and returns samples and their energy """
     print("Extracting showers from file...")
@@ -92,6 +105,20 @@ def extract_shower_and_energy_multiple(given_file, arg):
     print("Extracting showers from file done.\n")
     return showers, energies
 
+def create_reference(arg):
+    """ Create hdf5 file with high-level features for reference in plots """
+    # reference does not exist, do you want to create it? file path? download?
+    pass
+
+def load_reference(arg):
+    """ Load existing hdf5 with high-level features for reference in plots """
+    pass
+
+def plot_histograms(reference_file, arg):
+    """ plots histograms based with reference file as comparison """
+
+def download_source_reference():
+
 # if classifier is selected, check if data source exist, if not, ask if download is ok
 
 ########## Main ##########
@@ -107,7 +134,7 @@ if __name__ == '__main__':
     if not os.path.isdir(args.output_dir):
         os.makedirs(args.output_dir)
 
-    if args.dataset in ['2', '3']:
+    if args.dataset in ['2', '3']: # evaluating dataset 2 or 3
         shower, energy = extract_shower_and_energy_single(source_file, args)
         hlf = HLF.HighLevelFeatures('electron',
                                     filename='binning_dataset_{}.xml'.format(args.dataset))
@@ -119,7 +146,7 @@ if __name__ == '__main__':
                                                                 args.dataset)),
                                       title="Shower average")
             print("Plotting average shower done.\n")
-    else:
+    else: # evaluating dataset 1
         showers, energies = extract_shower_and_energy_multiple(source_file, args)
         hlf = HLF.HighLevelFeatures(args.dataset[2:],
                                     filename='binning_dataset_1_{}s.xml'.format(args.dataset[2:]))
@@ -132,3 +159,12 @@ if __name__ == '__main__':
                                           title="Average {} shower at E = {} MeV".format(
                                               args.dataset[2:], int(energy)))
             print("Plotting average shower done.\n")
+
+    if args.mode in ['all', 'hist-p']:
+        print("Plotting histograms...")
+        have_reference = check_reference(args)
+        if not have_reference:
+            reference = create_reference(args)
+        else:
+            reference = load_reference(args)
+        plot_histograms(reference, args)
