@@ -155,14 +155,22 @@ def plot_E_layers(hlf_class, reference_class, arg):
 def plot_ECEtas(hlf_class, reference_class, arg):
     """ plots center of energy in eta """
     for key in hlf_class.GetECEtas().keys():
+        if arg.dataset in ['2', '3']:
+            lim = (-30., 30.)
+        elif key in [12, 13]:
+            lim = (-500., 500.)
+        else:
+            lim = (-100., 100.)
         plt.figure(figsize=(6, 6))
-        _, bins, _ = plt.hist(reference_class.GetECEtas()[key], bins=100,
-                              label='reference', density=True, histtype='stepfilled',
-                              alpha=0.2, linewidth=2.)
+        bins = np.linspace(*lim, 101)
+        plt.hist(reference_class.GetECEtas()[key], bins=bins,
+                 label='reference', density=True, histtype='stepfilled',
+                 alpha=0.2, linewidth=2.)
         plt.hist(hlf_class.GetECEtas()[key], label='data', bins=bins,
                  histtype='step', linewidth=3., alpha=1., density=True)
         plt.title(r"Center of Energy in $\Delta\eta$ in layer {}".format(key))
         plt.xlabel(r'[mm]')
+        plt.xlim(*lim)
         plt.legend(fontsize=20)
         plt.tight_layout()
         filename = os.path.join(arg.output_dir,
@@ -174,14 +182,22 @@ def plot_ECEtas(hlf_class, reference_class, arg):
 def plot_ECPhis(hlf_class, reference_class, arg):
     """ plots center of energy in phi """
     for key in hlf_class.GetECPhis().keys():
+        if arg.dataset in ['2', '3']:
+            lim = (-30., 30.)
+        elif key in [12, 13]:
+            lim = (-500., 500.)
+        else:
+            lim = (-100., 100.)
         plt.figure(figsize=(6, 6))
-        _, bins, _ = plt.hist(reference_class.GetECPhis()[key], bins=100,
-                              label='reference', density=True, histtype='stepfilled',
-                              alpha=0.2, linewidth=2.)
+        bins = np.linspace(*lim, 101)
+        plt.hist(reference_class.GetECPhis()[key], bins=bins,
+                 label='reference', density=True, histtype='stepfilled',
+                 alpha=0.2, linewidth=2.)
         plt.hist(hlf_class.GetECPhis()[key], label='data', bins=bins,
                  histtype='step', linewidth=3., alpha=1., density=True)
         plt.title(r"Center of Energy in $\Delta\phi$ in layer {}".format(key))
         plt.xlabel(r'[mm]')
+        plt.xlim(*lim)
         plt.legend(fontsize=20)
         plt.tight_layout()
         filename = os.path.join(arg.output_dir,
@@ -193,20 +209,22 @@ def plot_ECPhis(hlf_class, reference_class, arg):
 def plot_ECWidthEtas(hlf_class, reference_class, arg):
     """ plots width of center of energy in eta """
     for key in hlf_class.GetWidthEtas().keys():
+        if arg.dataset in ['2', '3']:
+            lim = (0., 30.)
+        elif key in [12, 13]:
+            lim = (0., 400.)
+        else:
+            lim = (0., 100.)
         plt.figure(figsize=(6, 6))
-        _, bins, _ = plt.hist(reference_class.GetWidthEtas()[key], bins=100,
-                              label='reference', density=True, histtype='stepfilled',
-                              alpha=0.2, linewidth=2.)
+        bins = np.linspace(*lim, 101)
+        plt.hist(reference_class.GetWidthEtas()[key], bins=bins,
+                 label='reference', density=True, histtype='stepfilled',
+                 alpha=0.2, linewidth=2.)
         plt.hist(hlf_class.GetWidthEtas()[key], label='data', bins=bins,
                  histtype='step', linewidth=3., alpha=1., density=True)
         plt.title(r"Width of Center of Energy in $\Delta\eta$ in layer {}".format(key))
         plt.xlabel(r'[mm]')
-        if arg.dataset in ['2', '3']:
-            plt.xlim(0., 30.)
-        elif key in [12, 13]:
-            plt.xlim(0., 400.)
-        else:
-            plt.xlim(0., 100.)
+        plt.xlim(*lim)
         plt.legend(fontsize=20)
         plt.tight_layout()
         filename = os.path.join(arg.output_dir,
@@ -218,20 +236,22 @@ def plot_ECWidthEtas(hlf_class, reference_class, arg):
 def plot_ECWidthPhis(hlf_class, reference_class, arg):
     """ plots width of center of energy in phi """
     for key in hlf_class.GetWidthPhis().keys():
+        if arg.dataset in ['2', '3']:
+            lim = (0., 30.)
+        elif key in [12, 13]:
+            lim = (0., 400.)
+        else:
+            lim = (0., 100.)
         plt.figure(figsize=(6, 6))
-        _, bins, _ = plt.hist(reference_class.GetWidthPhis()[key], bins=100,
-                              label='reference', density=True, histtype='stepfilled',
-                              alpha=0.2, linewidth=2.)
+        bins = np.linspace(*lim, 101)
+        plt.hist(reference_class.GetWidthPhis()[key], bins=bins,
+                 label='reference', density=True, histtype='stepfilled',
+                 alpha=0.2, linewidth=2.)
         plt.hist(hlf_class.GetWidthPhis()[key], label='data', bins=bins,
                  histtype='step', linewidth=3., alpha=1., density=True)
         plt.title(r"Width of Center of Energy in $\Delta\phi$ in layer {}".format(key))
         plt.xlabel(r'[mm]')
-        if arg.dataset in ['2', '3']:
-            plt.xlim(0., 30.)
-        elif key in [12, 13]:
-            plt.xlim(0., 400.)
-        else:
-            plt.xlim(0., 100.)
+        plt.xlim(*lim)
         plt.legend(fontsize=20)
         plt.tight_layout()
         filename = os.path.join(arg.output_dir,
