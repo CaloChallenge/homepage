@@ -13,9 +13,13 @@ import os
 import pickle
 
 import numpy as np
+import matplotlib.pyplot as plt
 import h5py
 import HighLevelFeatures as HLF
 
+plt.rc('text', usetex=True)
+plt.rc('text.latex', preamble=r'\usepackage{amsmath,amssymb}')
+plt.rc('font', family='serif')
 
 
 ########## Parser Setup ##########
@@ -39,7 +43,8 @@ parser.add_argument('--dataset', '-d', choices=['1-photons', '1-pions', '2', '3'
 parser.add_argument('--output_dir', default='evaluation_results/',
                     help='Where to store evaluation output files (plots and scores).')
 parser.add_argument('--source_dir', default='source/',
-                    help='Folder that contains files required for comparative evaluations.')
+                    help='Folder that contains (soft links to) files required for'+\
+                    ' comparative evaluations.')
 
 
 ########## Functions and Classes ##########
@@ -87,9 +92,10 @@ def create_reference(arg):
                             'r')
     reference_showers, reference_energies = extract_shower_and_energy(source_file, arg)
     hlf_ref.CalculateFeatures(reference_showers)
+    hlf_ref.Einc = reference_energies
     with open(os.path.join(arg.source_dir, 'reference_{}.pkl'.format(arg.dataset)), 'wb') as file:
         pickle.dump(hlf_ref, file)
-    print("Creating reference pickle file: DONE")
+    print("Creating reference pickle file: DONE.\n")
     return hlf_ref
 
 def load_reference(arg):
@@ -102,12 +108,140 @@ def load_reference(arg):
 def plot_histograms(hlf_class, reference_class, arg):
     """ plots histograms based with reference file as comparison """
     plot_Etot_Einc(hlf_class, reference_class, arg)
+    plot_E_layers(hlf_class, reference_class, arg)
+    plot_ECEtas(hlf_class, reference_class, arg)
+    plot_ECPhis(hlf_class, reference_class, arg)
+    plot_ECWidthEtas(hlf_class, reference_class, arg)
+    plot_ECWidthPhis(hlf_class, reference_class, arg)
 
 def plot_Etot_Einc(hlf_class, reference_class, arg):
     """ plots Etot normalized to Einc histogram """
-    pass
+
+    bins = np.linspace(0.5, 1.5, 101)
+    plt.figure(figsize=(6, 6))
+    plt.hist(reference_class.GetEtot() / reference_class.Einc.squeeze(), bins=bins,
+             label='reference', density=True, histtype='stepfilled', alpha=0.2, linewidth=2.)
+    plt.hist(hlf_class.GetEtot() / hlf_class.Einc.squeeze(), bins=bins, label='data',
+             histtype='step', linewidth=3., alpha=1., density=True)
+    plt.xlim(0.5, 1.5)
+    plt.xlabel(r'$E_{\text{tot}} / E_{\text{inc}}$')
+    plt.legend(fontsize=20)
+    plt.tight_layout()
+    filename = os.path.join(arg.output_dir, 'Etot_Einc_dataset_{}.png'.format(arg.dataset))
+    plt.savefig(filename, dpi=300)
+    plt.close()
+
+
+def plot_E_layers(hlf_class, reference_class, arg):
+    """ plots energy deposited in each layer """
+    for key in hlf_class.GetElayers().keys():
+        plt.figure(figsize=(6, 6))
+        _, bins, _ = plt.hist(reference_class.GetElayers()[key], bins=20,
+                              label='reference', density=True, histtype='stepfilled',
+                              alpha=0.2, linewidth=2.)
+        plt.hist(hlf_class.GetElayers()[key], label='data', bins=bins,
+                 histtype='step', linewidth=3., alpha=1., density=True)
+        plt.title("Energy deposited in layer {}".format(key))
+        plt.xlabel(r'$E$ [MeV]')
+        plt.yscale('log')
+        plt.xscale('log')
+        plt.legend(fontsize=20)
+        plt.tight_layout()
+        filename = os.path.join(arg.output_dir, 'E_layer_{}_dataset_{}.png'.format(key,
+                                                                                   arg.dataset))
+        plt.savefig(filename, dpi=300)
+        plt.close()
+
+def plot_ECEtas(hlf_class, reference_class, arg):
+    """ plots center of energy in eta """
+    for key in hlf_class.GetECEtas().keys():
+        plt.figure(figsize=(6, 6))
+        _, bins, _ = plt.hist(reference_class.GetECEtas()[key], bins=100,
+                              label='reference', density=True, histtype='stepfilled',
+                              alpha=0.2, linewidth=2.)
+        plt.hist(hlf_class.GetECEtas()[key], label='data', bins=bins,
+                 histtype='step', linewidth=3., alpha=1., density=True)
+        plt.title(r"Center of Energy in $\Delta\eta$ in layer {}".format(key))
+        plt.xlabel(r'[mm]')
+        plt.legend(fontsize=20)
+        plt.tight_layout()
+        filename = os.path.join(arg.output_dir,
+                                'ECEta_layer_{}_dataset_{}.png'.format(key,
+                                                                       arg.dataset))
+        plt.savefig(filename, dpi=300)
+        plt.close()
+
+def plot_ECPhis(hlf_class, reference_class, arg):
+    """ plots center of energy in phi """
+    for key in hlf_class.GetECPhis().keys():
+        plt.figure(figsize=(6, 6))
+        _, bins, _ = plt.hist(reference_class.GetECPhis()[key], bins=100,
+                              label='reference', density=True, histtype='stepfilled',
+                              alpha=0.2, linewidth=2.)
+        plt.hist(hlf_class.GetECPhis()[key], label='data', bins=bins,
+                 histtype='step', linewidth=3., alpha=1., density=True)
+        plt.title(r"Center of Energy in $\Delta\phi$ in layer {}".format(key))
+        plt.xlabel(r'[mm]')
+        plt.legend(fontsize=20)
+        plt.tight_layout()
+        filename = os.path.join(arg.output_dir,
+                                'ECPhi_layer_{}_dataset_{}.png'.format(key,
+                                                                       arg.dataset))
+        plt.savefig(filename, dpi=300)
+        plt.close()
+
+def plot_ECWidthEtas(hlf_class, reference_class, arg):
+    """ plots width of center of energy in eta """
+    for key in hlf_class.GetWidthEtas().keys():
+        plt.figure(figsize=(6, 6))
+        _, bins, _ = plt.hist(reference_class.GetWidthEtas()[key], bins=100,
+                              label='reference', density=True, histtype='stepfilled',
+                              alpha=0.2, linewidth=2.)
+        plt.hist(hlf_class.GetWidthEtas()[key], label='data', bins=bins,
+                 histtype='step', linewidth=3., alpha=1., density=True)
+        plt.title(r"Width of Center of Energy in $\Delta\eta$ in layer {}".format(key))
+        plt.xlabel(r'[mm]')
+        if arg.dataset in ['2', '3']:
+            plt.xlim(0., 30.)
+        elif key in [12, 13]:
+            plt.xlim(0., 400.)
+        else:
+            plt.xlim(0., 100.)
+        plt.legend(fontsize=20)
+        plt.tight_layout()
+        filename = os.path.join(arg.output_dir,
+                                'WidthEta_layer_{}_dataset_{}.png'.format(key,
+                                                                          arg.dataset))
+        plt.savefig(filename, dpi=300)
+        plt.close()
+
+def plot_ECWidthPhis(hlf_class, reference_class, arg):
+    """ plots width of center of energy in phi """
+    for key in hlf_class.GetWidthPhis().keys():
+        plt.figure(figsize=(6, 6))
+        _, bins, _ = plt.hist(reference_class.GetWidthPhis()[key], bins=100,
+                              label='reference', density=True, histtype='stepfilled',
+                              alpha=0.2, linewidth=2.)
+        plt.hist(hlf_class.GetWidthPhis()[key], label='data', bins=bins,
+                 histtype='step', linewidth=3., alpha=1., density=True)
+        plt.title(r"Width of Center of Energy in $\Delta\phi$ in layer {}".format(key))
+        plt.xlabel(r'[mm]')
+        if arg.dataset in ['2', '3']:
+            plt.xlim(0., 30.)
+        elif key in [12, 13]:
+            plt.xlim(0., 400.)
+        else:
+            plt.xlim(0., 100.)
+        plt.legend(fontsize=20)
+        plt.tight_layout()
+        filename = os.path.join(arg.output_dir,
+                                'WidthPhi_layer_{}_dataset_{}.png'.format(key,
+                                                                          arg.dataset))
+        plt.savefig(filename, dpi=300)
+        plt.close()
 
 def download_source_reference():
+    """ Download dataset needed for reference """
     raise NotImplementedError()
 
 ########## Main ##########
@@ -162,7 +296,7 @@ if __name__ == '__main__':
 
     # any further evaluation needs a reference dataset, check if that exists:
     if check_reference(args):
-        print("Reference hdf5 file exist in {}, moving on.".format(args.source_dir))
+        print("Reference hdf5 file exist in {}, moving on.\n".format(args.source_dir))
     else:
         # TODO: ask if download is ok and download
         raise FileNotFoundError(
@@ -172,10 +306,16 @@ if __name__ == '__main__':
     if args.mode in ['all', 'hist-p']:
         print("Calculating high-level features for histograms ...")
         hlf.CalculateFeatures(shower)
-        print("Calculating high-level features for histograms: DONE")
+        hlf.Einc = energy
+
+        print("Calculating high-level features for histograms: DONE.\n")
         if check_pickle(args):
             reference = load_reference(args)
         else:
             reference = create_reference(args)
-        print("Plotting histograms...")
+        print("Plotting histograms ...")
         plot_histograms(hlf, reference, args)
+        print("Plotting histograms: DONE. \n")
+
+    if args.mode in ['hist-chi', 'cls-low', 'cls-high']:
+        raise NotImplementedError("Stay Tuned!")
