@@ -66,11 +66,11 @@ def check_file(given_file, arg):
 
 def check_reference(arg):
     """ checks if reference file for comparisons exist """
-    return os.path.exists(os.path.join(args.source_dir, 'reference_{}.hdf5'.format(arg.dataset)))
+    return os.path.exists(os.path.join(arg.source_dir, 'reference_{}.hdf5'.format(arg.dataset)))
 
 def check_pickle(arg):
     """ checks if reference pickle file of high-level features exist """
-    return os.path.exists(os.path.join(args.source_dir, 'reference_{}.pkl'.format(arg.dataset)))
+    return os.path.exists(os.path.join(arg.source_dir, 'reference_{}.pkl'.format(arg.dataset)))
 
 def extract_shower_and_energy(given_file, arg):
     """ reads .hdf5 file and returns samples and their energy """
