@@ -29,12 +29,14 @@ parser = argparse.ArgumentParser(description=('Evaluate calorimeter showers of t
 
 parser.add_argument('--input_file', '-i', help='Name of the input file to be evaluated.')
 parser.add_argument('--mode', '-m', default='all',
-                    choices=['all', 'avg', 'avg-E', 'hist-p', 'hist-chi', 'cls-low', 'cls-high'],
+                    choices=['all', 'avg', 'avg-E', 'hist-p', 'hist-chi', 'hist',
+                             'cls-low', 'cls-high'],
                     help=("What metric to evaluate: " +\
                           "'avg' plots the shower average;" +\
                           "'avg-E' plots the shower average for energy ranges;" +\
                           "'hist-p' plots the histograms;" +\
                           "'hist-chi' evaluates a chi2 of the histograms;" +\
+                          "'hist' evaluates a chi2 of the histograms and plots them;" +\
                           "'cls-low' trains a classifier on the low-level feautures;" +\
                           "'cls-high' trains a classifier on the high-level features;" +\
                           "'all' does the full evaluation, ie all of the above."))
@@ -119,16 +121,27 @@ def plot_Etot_Einc(hlf_class, reference_class, arg):
 
     bins = np.linspace(0.5, 1.5, 101)
     plt.figure(figsize=(6, 6))
-    plt.hist(reference_class.GetEtot() / reference_class.Einc.squeeze(), bins=bins,
-             label='reference', density=True, histtype='stepfilled', alpha=0.2, linewidth=2.)
-    plt.hist(hlf_class.GetEtot() / hlf_class.Einc.squeeze(), bins=bins, label='data',
-             histtype='step', linewidth=3., alpha=1., density=True)
+    counts_ref, _, _ = plt.hist(reference_class.GetEtot() / reference_class.Einc.squeeze(),
+                                bins=bins, label='reference', density=True,
+                                histtype='stepfilled', alpha=0.2, linewidth=2.)
+    counts_data, _, _ = plt.hist(hlf_class.GetEtot() / hlf_class.Einc.squeeze(), bins=bins,
+                                 label='data', histtype='step', linewidth=3., alpha=1.,
+                                 density=True)
     plt.xlim(0.5, 1.5)
     plt.xlabel(r'$E_{\text{tot}} / E_{\text{inc}}$')
     plt.legend(fontsize=20)
     plt.tight_layout()
-    filename = os.path.join(arg.output_dir, 'Etot_Einc_dataset_{}.png'.format(arg.dataset))
-    plt.savefig(filename, dpi=300)
+    if arg.mode in ['all', 'hist-p', 'hist']:
+        filename = os.path.join(arg.output_dir, 'Etot_Einc_dataset_{}.png'.format(arg.dataset))
+        plt.savefig(filename, dpi=300)
+    if arg.mode in ['all', 'hist-chi', 'hist']:
+        seps = separation_power(counts_ref, counts_data, bins)
+        print("Separation power of Etot / Einc histogram: {}".format(seps))
+        with open(os.path.join(arg.output_dir, 'histogram_chi2_{}.txt'.format(arg.dataset)),
+                  'a') as f:
+            f.write('Etot / Einc: \n')
+            f.write(str(seps))
+            f.write('\n\n')
     plt.close()
 
 
@@ -136,20 +149,30 @@ def plot_E_layers(hlf_class, reference_class, arg):
     """ plots energy deposited in each layer """
     for key in hlf_class.GetElayers().keys():
         plt.figure(figsize=(6, 6))
-        _, bins, _ = plt.hist(reference_class.GetElayers()[key], bins=20,
-                              label='reference', density=True, histtype='stepfilled',
-                              alpha=0.2, linewidth=2.)
-        plt.hist(hlf_class.GetElayers()[key], label='data', bins=bins,
-                 histtype='step', linewidth=3., alpha=1., density=True)
+        counts_ref, bins, _ = plt.hist(reference_class.GetElayers()[key], bins=20,
+                                       label='reference', density=True, histtype='stepfilled',
+                                       alpha=0.2, linewidth=2.)
+        counts_data, _, _ = plt.hist(hlf_class.GetElayers()[key], label='data', bins=bins,
+                                     histtype='step', linewidth=3., alpha=1., density=True)
         plt.title("Energy deposited in layer {}".format(key))
         plt.xlabel(r'$E$ [MeV]')
         plt.yscale('log')
         plt.xscale('log')
         plt.legend(fontsize=20)
         plt.tight_layout()
-        filename = os.path.join(arg.output_dir, 'E_layer_{}_dataset_{}.png'.format(key,
-                                                                                   arg.dataset))
-        plt.savefig(filename, dpi=300)
+        if arg.mode in ['all', 'hist-p', 'hist']:
+            filename = os.path.join(arg.output_dir, 'E_layer_{}_dataset_{}.png'.format(
+                key,
+                arg.dataset))
+            plt.savefig(filename, dpi=300)
+        if arg.mode in ['all', 'hist-chi', 'hist']:
+            seps = separation_power(counts_ref, counts_data, bins)
+            print("Separation power of E layer {} histogram: {}".format(key, seps))
+            with open(os.path.join(arg.output_dir, 'histogram_chi2_{}.txt'.format(arg.dataset)),
+                      'a') as f:
+                f.write('E layer {}: \n'.format(key))
+                f.write(str(seps))
+                f.write('\n\n')
         plt.close()
 
 def plot_ECEtas(hlf_class, reference_class, arg):
@@ -163,20 +186,29 @@ def plot_ECEtas(hlf_class, reference_class, arg):
             lim = (-100., 100.)
         plt.figure(figsize=(6, 6))
         bins = np.linspace(*lim, 101)
-        plt.hist(reference_class.GetECEtas()[key], bins=bins,
-                 label='reference', density=True, histtype='stepfilled',
-                 alpha=0.2, linewidth=2.)
-        plt.hist(hlf_class.GetECEtas()[key], label='data', bins=bins,
-                 histtype='step', linewidth=3., alpha=1., density=True)
+        counts_ref, _, _ = plt.hist(reference_class.GetECEtas()[key], bins=bins,
+                                    label='reference', density=True, histtype='stepfilled',
+                                    alpha=0.2, linewidth=2.)
+        counts_data, _, _ = plt.hist(hlf_class.GetECEtas()[key], label='data', bins=bins,
+                                     histtype='step', linewidth=3., alpha=1., density=True)
         plt.title(r"Center of Energy in $\Delta\eta$ in layer {}".format(key))
         plt.xlabel(r'[mm]')
         plt.xlim(*lim)
         plt.legend(fontsize=20)
         plt.tight_layout()
-        filename = os.path.join(arg.output_dir,
-                                'ECEta_layer_{}_dataset_{}.png'.format(key,
-                                                                       arg.dataset))
-        plt.savefig(filename, dpi=300)
+        if arg.mode in ['all', 'hist-p', 'hist']:
+            filename = os.path.join(arg.output_dir,
+                                    'ECEta_layer_{}_dataset_{}.png'.format(key,
+                                                                           arg.dataset))
+            plt.savefig(filename, dpi=300)
+        if arg.mode in ['all', 'hist-chi', 'hist']:
+            seps = separation_power(counts_ref, counts_data, bins)
+            print("Separation power of EC Eta layer {} histogram: {}".format(key, seps))
+            with open(os.path.join(arg.output_dir, 'histogram_chi2_{}.txt'.format(arg.dataset)),
+                      'a') as f:
+                f.write('EC Eta layer {}: \n'.format(key))
+                f.write(str(seps))
+                f.write('\n\n')
         plt.close()
 
 def plot_ECPhis(hlf_class, reference_class, arg):
@@ -190,20 +222,29 @@ def plot_ECPhis(hlf_class, reference_class, arg):
             lim = (-100., 100.)
         plt.figure(figsize=(6, 6))
         bins = np.linspace(*lim, 101)
-        plt.hist(reference_class.GetECPhis()[key], bins=bins,
-                 label='reference', density=True, histtype='stepfilled',
-                 alpha=0.2, linewidth=2.)
-        plt.hist(hlf_class.GetECPhis()[key], label='data', bins=bins,
-                 histtype='step', linewidth=3., alpha=1., density=True)
+        counts_ref, _, _ = plt.hist(reference_class.GetECPhis()[key], bins=bins,
+                                    label='reference', density=True, histtype='stepfilled',
+                                    alpha=0.2, linewidth=2.)
+        counts_data, _, _ = plt.hist(hlf_class.GetECPhis()[key], label='data', bins=bins,
+                                     histtype='step', linewidth=3., alpha=1., density=True)
         plt.title(r"Center of Energy in $\Delta\phi$ in layer {}".format(key))
         plt.xlabel(r'[mm]')
         plt.xlim(*lim)
         plt.legend(fontsize=20)
         plt.tight_layout()
-        filename = os.path.join(arg.output_dir,
-                                'ECPhi_layer_{}_dataset_{}.png'.format(key,
-                                                                       arg.dataset))
-        plt.savefig(filename, dpi=300)
+        if arg.mode in ['all', 'hist-p', 'hist']:
+            filename = os.path.join(arg.output_dir,
+                                    'ECPhi_layer_{}_dataset_{}.png'.format(key,
+                                                                           arg.dataset))
+            plt.savefig(filename, dpi=300)
+        if arg.mode in ['all', 'hist-chi', 'hist']:
+            seps = separation_power(counts_ref, counts_data, bins)
+            print("Separation power of EC Phi layer {} histogram: {}".format(key, seps))
+            with open(os.path.join(arg.output_dir, 'histogram_chi2_{}.txt'.format(arg.dataset)),
+                      'a') as f:
+                f.write('EC Phi layer {}: \n'.format(key))
+                f.write(str(seps))
+                f.write('\n\n')
         plt.close()
 
 def plot_ECWidthEtas(hlf_class, reference_class, arg):
@@ -217,20 +258,29 @@ def plot_ECWidthEtas(hlf_class, reference_class, arg):
             lim = (0., 100.)
         plt.figure(figsize=(6, 6))
         bins = np.linspace(*lim, 101)
-        plt.hist(reference_class.GetWidthEtas()[key], bins=bins,
-                 label='reference', density=True, histtype='stepfilled',
-                 alpha=0.2, linewidth=2.)
-        plt.hist(hlf_class.GetWidthEtas()[key], label='data', bins=bins,
-                 histtype='step', linewidth=3., alpha=1., density=True)
+        counts_ref, _, _ = plt.hist(reference_class.GetWidthEtas()[key], bins=bins,
+                                    label='reference', density=True, histtype='stepfilled',
+                                    alpha=0.2, linewidth=2.)
+        counts_data, _, _ = plt.hist(hlf_class.GetWidthEtas()[key], label='data', bins=bins,
+                                     histtype='step', linewidth=3., alpha=1., density=True)
         plt.title(r"Width of Center of Energy in $\Delta\eta$ in layer {}".format(key))
         plt.xlabel(r'[mm]')
         plt.xlim(*lim)
         plt.legend(fontsize=20)
         plt.tight_layout()
-        filename = os.path.join(arg.output_dir,
-                                'WidthEta_layer_{}_dataset_{}.png'.format(key,
-                                                                          arg.dataset))
-        plt.savefig(filename, dpi=300)
+        if arg.mode in ['all', 'hist-p', 'hist']:
+            filename = os.path.join(arg.output_dir,
+                                    'WidthEta_layer_{}_dataset_{}.png'.format(key,
+                                                                              arg.dataset))
+            plt.savefig(filename, dpi=300)
+        if arg.mode in ['all', 'hist-chi', 'hist']:
+            seps = separation_power(counts_ref, counts_data, bins)
+            print("Separation power of Width Eta layer {} histogram: {}".format(key, seps))
+            with open(os.path.join(arg.output_dir, 'histogram_chi2_{}.txt'.format(arg.dataset)),
+                      'a') as f:
+                f.write('Width Eta layer {}: \n'.format(key))
+                f.write(str(seps))
+                f.write('\n\n')
         plt.close()
 
 def plot_ECWidthPhis(hlf_class, reference_class, arg):
@@ -244,25 +294,44 @@ def plot_ECWidthPhis(hlf_class, reference_class, arg):
             lim = (0., 100.)
         plt.figure(figsize=(6, 6))
         bins = np.linspace(*lim, 101)
-        plt.hist(reference_class.GetWidthPhis()[key], bins=bins,
-                 label='reference', density=True, histtype='stepfilled',
-                 alpha=0.2, linewidth=2.)
-        plt.hist(hlf_class.GetWidthPhis()[key], label='data', bins=bins,
-                 histtype='step', linewidth=3., alpha=1., density=True)
+        counts_ref, _, _ = plt.hist(reference_class.GetWidthPhis()[key], bins=bins,
+                                    label='reference', density=True, histtype='stepfilled',
+                                    alpha=0.2, linewidth=2.)
+        counts_data, _, _ = plt.hist(hlf_class.GetWidthPhis()[key], label='data', bins=bins,
+                                     histtype='step', linewidth=3., alpha=1., density=True)
         plt.title(r"Width of Center of Energy in $\Delta\phi$ in layer {}".format(key))
         plt.xlabel(r'[mm]')
         plt.xlim(*lim)
         plt.legend(fontsize=20)
         plt.tight_layout()
-        filename = os.path.join(arg.output_dir,
-                                'WidthPhi_layer_{}_dataset_{}.png'.format(key,
-                                                                          arg.dataset))
-        plt.savefig(filename, dpi=300)
+        if arg.mode in ['all', 'hist-p', 'hist']:
+            filename = os.path.join(arg.output_dir,
+                                    'WidthPhi_layer_{}_dataset_{}.png'.format(key,
+                                                                              arg.dataset))
+            plt.savefig(filename, dpi=300)
+        if arg.mode in ['all', 'hist-chi', 'hist']:
+            seps = separation_power(counts_ref, counts_data, bins)
+            print("Separation power of Width Phi layer {} histogram: {}".format(key, seps))
+            with open(os.path.join(arg.output_dir, 'histogram_chi2_{}.txt'.format(arg.dataset)),
+                      'a') as f:
+                f.write('Width Phi layer {}: \n'.format(key))
+                f.write(str(seps))
+                f.write('\n\n')
         plt.close()
 
 def download_source_reference():
     """ Download dataset needed for reference """
     raise NotImplementedError()
+
+def separation_power(hist1, hist2, bins):
+    """ computes the separation power aka triangular discrimination (cf eq. 15 of 2009.03796)
+        Note: the definition requires Sum (hist_i) = 1, so if hist1 and hist2 come from
+        plt.hist(..., density=True), we need to multiply hist_i by the bin widhts
+    """
+    hist1, hist2 = hist1*np.diff(bins), hist2*np.diff(bins)
+    ret = (hist1 - hist2)**2
+    ret /= hist1 + hist2 + 1e-16
+    return 0.5 * ret.sum()
 
 ########## Main ##########
 
@@ -323,7 +392,7 @@ if __name__ == '__main__':
             "Reference hdf5 file does not exist in {}, please provide file {}".format(
                 args.source_dir, 'reference_{}.hdf5'.format(args.dataset)))
 
-    if args.mode in ['all', 'hist-p']:
+    if args.mode in ['all', 'hist-p', 'hist-chi', 'hist']:
         print("Calculating high-level features for histograms ...")
         hlf.CalculateFeatures(shower)
         hlf.Einc = energy
@@ -333,9 +402,14 @@ if __name__ == '__main__':
             reference = load_reference(args)
         else:
             reference = create_reference(args)
+        if args.mode in ['all', 'hist-chi', 'hist']:
+            with open(os.path.join(args.output_dir, 'histogram_chi2_{}.txt'.format(args.dataset)),
+                      'w') as f:
+                f.write('List of chi2 of the plotted histograms,'+\
+                        ' see eq. 15 of 2009.03796 for its definition.\n')
         print("Plotting histograms ...")
         plot_histograms(hlf, reference, args)
         print("Plotting histograms: DONE. \n")
 
-    if args.mode in ['hist-chi', 'cls-low', 'cls-high']:
+    if args.mode in ['cls-low', 'cls-high']:
         raise NotImplementedError("Stay Tuned!")
