@@ -41,7 +41,7 @@ Files containing the detector binning information for each dataset as well as Py
 
 <p style='text-align: justify;'>
 
-The overarching goal of the challenge is to learn (either implicitly or explicitly) the conditional probability distribution $p(x|E)$ where $x$ are the voxel energy deposits and $E$ is the incident energy.
+The overarching goal of the challenge is to train a generative model on the datasets provided and learn to sample from the conditional probability distribution $p(x|E)$, where $x$ are the voxel energy deposits and $E$ is the incident energy.
 </p>
 
 <p style='text-align: justify;'>
