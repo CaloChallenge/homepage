@@ -40,6 +40,12 @@ Files containing the detector binning information for each dataset as well as Py
 ### Metrics
 
 <p style='text-align: justify;'>
+
+The overarching goal of the challenge is to learn (either implicitly or explicitly) the conditional probability distribution $p(x|E)$ where $x$ are the voxel energy deposits and $E$ is the incident energy.
+</p>
+
+<p style='text-align: justify;'>
+
 Participants will be scored using a variety of metrics. We will include more detailed descriptions of them in the coming months. Metrics will include:
 </p>
 - A binary classifier trained on <q>truth</q> GEANT4 vs. generated shower images.
