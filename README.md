@@ -58,7 +58,10 @@ It is expected that there will not necessarily be a single clear winner, but dif
 <p style='text-align: justify;'>
 A script to perform the evaluation is available on the <a href="https://github.com/CaloChallenge/homepage/tree/main/code">Github page</a>. It can be called as 
 </p>
-```python evaluate.py -i INPUT_FILE -m MODE -d DATASET --output_dir OUTPUT_DIR --source_dir SOURCE_DIR```
+
+```
+python evaluate.py -i INPUT_FILE -m MODE -d DATASET --output_dir OUTPUT_DIR --source_dir SOURCE_DIR
+```
 
 ```INPUT_FILE``` is the hdf5 file that contains the showers to be evaluated.
 
