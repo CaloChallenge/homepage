@@ -54,8 +54,14 @@ Participants will be scored using a variety of metrics. We will include more det
 - Training time, calorimeter shower generation time and memory usage.
 - Interpolation capabilities: leave out one energy in training and generate samples at that energy after training. 
 <p style='text-align: justify;'>
-It is expected that there will not necessarily be a single clear winner, but different methods will have their pros and cons. Scripts to perform the evaluation will eventually be made available on the <a href="https://github.com/CaloChallenge/homepage/tree/main/code">Github page</a>. 
+It is expected that there will not necessarily be a single clear winner, but different methods will have their pros and cons.</p>
+<p style='text-align: justify;'>
+A script to perform the evaluation is available on the <a href="https://github.com/CaloChallenge/homepage/tree/main/code">Github page</a>. It can be called as 
 </p>
+```
+python evaluate.py -i INPUT_FILE -m MODE -d DATASET --output_dir OUTPUT_DIR --source_dir SOURCE_DIR
+```
+
 
 ### Timeline
 
