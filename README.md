@@ -58,14 +58,16 @@ It is expected that there will not necessarily be a single clear winner, but dif
 <p style='text-align: justify;'>
 A script to perform the evaluation is available on the <a href="https://github.com/CaloChallenge/homepage/tree/main/code">Github page</a>. It can be called as 
 </p>
-```
-python evaluate.py -i INPUT_FILE -m MODE -d DATASET --output_dir OUTPUT_DIR --source_dir SOURCE_DIR
-```
+```python evaluate.py -i INPUT_FILE -m MODE -d DATASET --output_dir OUTPUT_DIR --source_dir SOURCE_DIR```
 
 ```INPUT_FILE``` is the hdf5 file that contains the showers to be evaluated.
+
 ```MODE``` is one of [all, avg, avg-E, hist, hist-p, hist-chi], and defaults to 'all'. 'avg' plots the average shower of all provided events; 'avg-E' plots the average shower in smaller energy ranges; 'hist' plots histograms of high-level features and saves the separation power, a measure of difference between the histogram of the provided file and the histogram of a reference in SOURCE_DIR, into a file; 'hist-p' only plots the histograms; 'hist-chi' only saves the separation power; and 'all' does all of the above.
+
 ```DATASET``` is the name of the dataset that should be evaluated. Must be one of [1-photons, 1-pions, 2, 3].
+
 ```OUTPUT_DIR``` is the folder in which the plots and other files will be stored. It defaults to 'evaluation_results/'.
+
 ```SOURCE_DIR``` is the folder that contains the hdf5 file of the reference dataset (required for histograms and eventually for the classifier metrics). This file must be provided by the user under the name 'reference_DATASET.hdf5', with DATASET as given in ```DATASET``` above.
 
 The first run of the evaluation script will create a '.pkl' file of the high-level features of the reference file in the SOURCE_DIR, such that subsequent evaluations run faster. 
