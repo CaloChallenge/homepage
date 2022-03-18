@@ -140,7 +140,7 @@ def plot_Etot_Einc(hlf_class, reference_class, arg):
                                 bins=bins, label='reference', density=True,
                                 histtype='stepfilled', alpha=0.2, linewidth=2.)
     counts_data, _, _ = plt.hist(hlf_class.GetEtot() / hlf_class.Einc.squeeze(), bins=bins,
-                                 label='data', histtype='step', linewidth=3., alpha=1.,
+                                 label='generated', histtype='step', linewidth=3., alpha=1.,
                                  density=True)
     plt.xlim(0.5, 1.5)
     plt.xlabel(r'$E_{\text{tot}} / E_{\text{inc}}$')
@@ -167,7 +167,7 @@ def plot_E_layers(hlf_class, reference_class, arg):
         counts_ref, bins, _ = plt.hist(reference_class.GetElayers()[key], bins=20,
                                        label='reference', density=True, histtype='stepfilled',
                                        alpha=0.2, linewidth=2.)
-        counts_data, _, _ = plt.hist(hlf_class.GetElayers()[key], label='data', bins=bins,
+        counts_data, _, _ = plt.hist(hlf_class.GetElayers()[key], label='generated', bins=bins,
                                      histtype='step', linewidth=3., alpha=1., density=True)
         plt.title("Energy deposited in layer {}".format(key))
         plt.xlabel(r'$E$ [MeV]')
@@ -204,7 +204,7 @@ def plot_ECEtas(hlf_class, reference_class, arg):
         counts_ref, _, _ = plt.hist(reference_class.GetECEtas()[key], bins=bins,
                                     label='reference', density=True, histtype='stepfilled',
                                     alpha=0.2, linewidth=2.)
-        counts_data, _, _ = plt.hist(hlf_class.GetECEtas()[key], label='data', bins=bins,
+        counts_data, _, _ = plt.hist(hlf_class.GetECEtas()[key], label='generated', bins=bins,
                                      histtype='step', linewidth=3., alpha=1., density=True)
         plt.title(r"Center of Energy in $\Delta\eta$ in layer {}".format(key))
         plt.xlabel(r'[mm]')
@@ -240,7 +240,7 @@ def plot_ECPhis(hlf_class, reference_class, arg):
         counts_ref, _, _ = plt.hist(reference_class.GetECPhis()[key], bins=bins,
                                     label='reference', density=True, histtype='stepfilled',
                                     alpha=0.2, linewidth=2.)
-        counts_data, _, _ = plt.hist(hlf_class.GetECPhis()[key], label='data', bins=bins,
+        counts_data, _, _ = plt.hist(hlf_class.GetECPhis()[key], label='generated', bins=bins,
                                      histtype='step', linewidth=3., alpha=1., density=True)
         plt.title(r"Center of Energy in $\Delta\phi$ in layer {}".format(key))
         plt.xlabel(r'[mm]')
@@ -276,7 +276,7 @@ def plot_ECWidthEtas(hlf_class, reference_class, arg):
         counts_ref, _, _ = plt.hist(reference_class.GetWidthEtas()[key], bins=bins,
                                     label='reference', density=True, histtype='stepfilled',
                                     alpha=0.2, linewidth=2.)
-        counts_data, _, _ = plt.hist(hlf_class.GetWidthEtas()[key], label='data', bins=bins,
+        counts_data, _, _ = plt.hist(hlf_class.GetWidthEtas()[key], label='generated', bins=bins,
                                      histtype='step', linewidth=3., alpha=1., density=True)
         plt.title(r"Width of Center of Energy in $\Delta\eta$ in layer {}".format(key))
         plt.xlabel(r'[mm]')
@@ -312,7 +312,7 @@ def plot_ECWidthPhis(hlf_class, reference_class, arg):
         counts_ref, _, _ = plt.hist(reference_class.GetWidthPhis()[key], bins=bins,
                                     label='reference', density=True, histtype='stepfilled',
                                     alpha=0.2, linewidth=2.)
-        counts_data, _, _ = plt.hist(hlf_class.GetWidthPhis()[key], label='data', bins=bins,
+        counts_data, _, _ = plt.hist(hlf_class.GetWidthPhis()[key], label='generated', bins=bins,
                                      histtype='step', linewidth=3., alpha=1., density=True)
         plt.title(r"Width of Center of Energy in $\Delta\phi$ in layer {}".format(key))
         plt.xlabel(r'[mm]')
@@ -359,6 +359,9 @@ if __name__ == '__main__':
 
     if not os.path.isdir(args.output_dir):
         os.makedirs(args.output_dir)
+
+    if not os.path.isdir(args.source_dir):
+        os.makedirs(args.source_dir)
 
     particle = {'1-photons': 'photon', '1-pions': 'pion',
                 '2': 'electron', '3': 'electron'}[args.dataset]
