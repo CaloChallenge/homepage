@@ -64,9 +64,23 @@ It is expected that there will not necessarily be a single clear winner, but dif
 <p style='text-align: justify;'>
 A script to perform the evaluation is available on the <a href="https://github.com/CaloChallenge/homepage/tree/main/code">Github page</a>. <a href="https://github.com/CaloChallenge/homepage/tree/main/code/Evaluation-visualization.ipynb">Here</a>, we provide an interactive notebook version of the evaluation script. More options will be added in the near future. 
 </p>
-
-
-
+<p style='text-align: justify;'>
+In order to run the evaluation, the generated showers should be saved in the same format inside a .hdf5 file as the training showers. Such a file can be created with
+<pre>
+<code>
+import h5py
+dataset_file = h5py.File('your_output_dataset_name.hdf5', 'w')
+dataset_file.create_dataset('incident_energies',
+			    data=your_energies.reshape(len(your_energies), -1),
+			    compression='gzip')
+dataset_file.create_dataset('showers',
+			    data=your_showers.reshape(len(your_showers), -1),
+			    compression='gzip')
+dataset_file.close()
+</code>
+</pre>
+Note that the distribution of incident energies of the samples should match the distribution in the validation data, as the histograms might otherwise be distorted.
+</p>
 
 ### Timeline
 
