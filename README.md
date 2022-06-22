@@ -93,7 +93,7 @@ Please do not hesitate to ask questions: we will use the [ML4Jets slack channel]
 
 Good luck!
 
-_Michele Faucci Gianelli, Gregor Kasieczka, Claudius Krause, Ben Nachman, Dalila Salamani, David Shih and Anna Zaborowska_
+_Michele Faucci Giannelli, Gregor Kasieczka, Claudius Krause, Ben Nachman, Dalila Salamani, David Shih and Anna Zaborowska_
 
 
 
