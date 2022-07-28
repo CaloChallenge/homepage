@@ -15,7 +15,16 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
+import torch
+from torch.utils.data import TensorDataset, DataLoader
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import roc_auc_score
+from sklearn.calibration import calibration_curve
+from sklearn.isotonic import IsotonicRegression
+
 import HighLevelFeatures as HLF
+
+torch.set_default_dtype(torch.float64)
 
 plt.rc('text', usetex=True)
 plt.rc('text.latex', preamble=r'\usepackage{amsmath,amssymb}')
@@ -29,9 +38,9 @@ parser = argparse.ArgumentParser(description=('Evaluate calorimeter showers of t
 
 parser.add_argument('--input_file', '-i', help='Name of the input file to be evaluated.')
 parser.add_argument('--reference_file', '-r',
-                    help='Name of the file to be used as reference. Must be .hdf5 when'+\
-                    ' run for the first time, can be the .pkl that is created in the first'+\
-                    ' run for faster runtime in subsequent runs.')
+                    help='Name and path of the .hdf5 file to be used as reference. '+\
+                    'A .pkl file is created at the same location '+\
+                    'in the first run for faster runtime in subsequent runs.')
 parser.add_argument('--mode', '-m', default='all',
                     choices=['all', 'avg', 'avg-E', 'hist-p', 'hist-chi', 'hist',
                              'cls-low', 'cls-high'],
@@ -48,13 +57,225 @@ parser.add_argument('--dataset', '-d', choices=['1-photons', '1-pions', '2', '3'
                     help='Which dataset is evaluated.')
 parser.add_argument('--output_dir', default='evaluation_results/',
                     help='Where to store evaluation output files (plots and scores).')
-parser.add_argument('--source_dir', default='source/',
-                    help='Folder that contains (soft links to) files required for'+\
-                    ' comparative evaluations (high level features stored in .pkl or '+\
-                    'datasets prepared for classifier runs.).')
+#parser.add_argument('--source_dir', default='source/',
+#                    help='Folder that contains (soft links to) files required for'+\
+#                    ' comparative evaluations (high level features stored in .pkl or '+\
+#                   'datasets prepared for classifier runs.).')
 
+# classifier options
+
+# not possible since train/test/val split is done differently each time
+# to-do: save random-seed to file/read prior to split
+#parser.add_argument('--cls_load', action='store_true', default=False,
+#                    help='Whether or not load classifier from --output_dir')
+
+parser.add_argument('--cls_normed', action='store_true',
+                    help='Train classifier on showers normed by layer.')
+parser.add_argument('--cls_n_layer', type=int, default=2,
+                    help='Number of hidden layers in the classifier, default is 2.')
+parser.add_argument('--cls_n_hidden', type=int, default='512',
+                    help='Hidden nodes per layer of the classifier, default is 512.')
+parser.add_argument('--cls_dropout_probability', type=float, default=0.,
+                    help='Dropout probability of the classifier, default is 0.')
+
+parser.add_argument('--cls_batch_size', type=int, default=1000,
+                    help='Classifier batch size, default is 1000.')
+parser.add_argument('--cls_n_epochs', type=int, default=50,
+                    help='Number of epochs to train classifier, default is 50.')
+parser.add_argument('--cls_lr', type=float, default=2e-4,
+                    help='Learning rate of the classifier, default is 2e-4.')
+
+# CUDA parameters
+parser.add_argument('--no_cuda', action='store_true', help='Do not use cuda.')
+parser.add_argument('--which_cuda', default=0, type=int,
+                    help='Which cuda device to use')
 
 ########## Functions and Classes ##########
+
+class DNN(torch.nn.Module):
+    """ NN for vanilla classifier. Does not have sigmoid activation in last layer, should
+        be used with torch.nn.BCEWithLogitsLoss()
+    """
+    def __init__(self, num_layer, num_hidden, input_dim, dropout_probability=0.):
+        super(DNN, self).__init__()
+
+        self.dpo = dropout_probability
+
+        self.inputlayer = torch.nn.Linear(input_dim, num_hidden)
+        self.outputlayer = torch.nn.Linear(num_hidden, 1)
+
+        all_layers = [self.inputlayer, torch.nn.LeakyReLU(), torch.nn.Dropout(self.dpo)]
+        for _ in range(num_layer):
+            all_layers.append(torch.nn.Linear(num_hidden, num_hidden))
+            all_layers.append(torch.nn.LeakyReLU())
+            all_layers.append(torch.nn.Dropout(self.dpo))
+
+        all_layers.append(self.outputlayer)
+        self.layers = torch.nn.Sequential(*all_layers)
+
+    def forward(self, x):
+        x = self.layers(x)
+        return x
+
+def prepare_data_for_classifier(hdf5_file, hlf_class, label, normed=False):
+    """ takes hdf5_file, extracts Einc and voxel energies, appends label, returns array """
+    # todo: preprocessing? normalize per layer, append Ei
+    if normed:
+        E_norm_rep = []
+        E_norm = []
+        for idx, layer_id in enumerate(hlf_class.GetElayers()):
+            E_norm_rep.append(np.repeat(hlf_class.GetElayers()[layer_id].reshape(-1, 1),
+                                        hlf_class.num_voxel[idx], axis=1))
+            E_norm.append(hlf_class.GetElayers()[layer_id].reshape(-1, 1))
+        E_norm_rep = np.concatenate(E_norm_rep, axis=1)
+        E_norm = np.concatenate(E_norm, axis=1)
+    voxel, E_inc = extract_shower_and_energy(hdf5_file, label)
+    if normed:
+        voxel = voxel / (E_norm_rep+1e-16)
+        ret = np.concatenate([np.log10(E_inc), voxel, np.log10(E_norm+1e-8),
+                              label*np.ones_like(E_inc)], axis=1)
+    else:
+        voxel = voxel / E_inc
+        ret = np.concatenate([np.log10(E_inc), voxel, label*np.ones_like(E_inc)], axis=1)
+    print(ret.shape)
+    return ret
+
+def ttv_split(data, split=np.array([0.6, 0.2, 0.2])):
+    """ splits data in train/test/val according to split, returns shuffled arrays """
+    num_events = (len(data) * split).astype(int)
+    np.random.shuffle(data)
+    train, test, val = np.split(data, num_events.cumsum()[:-1])
+    return train, test, val
+
+def load_classifier(constructed_model, parser_args):
+    """ loads a saved model """
+    filename = parser_args.mode + '_' + parser_args.dataset + '.pt'
+    checkpoint = torch.load(os.path.join(parser_args.output_dir, filename),
+                            map_location=parser_args.device)
+    constructed_model.load_state_dict(checkpoint['model_state_dict'])
+    constructed_model.to(parser_args.device)
+    constructed_model.eval()
+    print('classifier loaded successfully')
+    return constructed_model
+
+
+def train_and_evaluate_cls(model, data_train, data_test, optim, arg):
+    """ train the model and evaluate along the way"""
+    best_eval_acc = float('-inf')
+    arg.best_epoch = -1
+    try:
+        for i in range(arg.cls_n_epochs):
+            train_cls(model, data_train, optim, i, arg)
+            with torch.no_grad():
+                eval_acc, _, _ = evaluate_cls(model, data_test)
+            if eval_acc > best_eval_acc:
+                best_eval_acc = eval_acc
+                args.best_epoch = i+1
+                filename = arg.mode + '_' + arg.dataset + '.pt'
+                torch.save({'model_state_dict':model.state_dict()},
+                           os.path.join(arg.output_dir, filename))
+            if eval_acc == 1.:
+                break
+    except KeyboardInterrupt:
+        pass
+
+def train_cls(model, data_train, optim, epoch, arg):
+    """ train one step """
+    model.train()
+    for i, data_batch in enumerate(data_train):
+        data_batch = data_batch[0]
+        #input_vector, target_vector = torch.split(data_batch, [data_batch.size()[1]-1, 1], dim=1)
+        input_vector, target_vector = data_batch[:, :-1], data_batch[:, -1]
+        output_vector = model(input_vector)
+        criterion = torch.nn.BCEWithLogitsLoss()
+        loss = criterion(output_vector, target_vector.unsqueeze(1))
+
+        optim.zero_grad()
+        loss.backward()
+        optim.step()
+
+        if i % (len(data_train)//2) == 0:
+            print('Epoch {:3d} / {}, step {:4d} / {}; loss {:.4f}'.format(
+                epoch+1, arg.cls_n_epochs, i, len(data_train), loss.item()))
+        # PREDICTIONS
+        pred = torch.round(torch.sigmoid(output_vector.detach()))
+        target = torch.round(target_vector.detach())
+        if i == 0:
+            res_true = target
+            res_pred = pred
+        else:
+            res_true = torch.cat((res_true, target), 0)
+            res_pred = torch.cat((res_pred, pred), 0)
+
+    print("Accuracy on training set is",
+          accuracy_score(res_true.cpu(), res_pred.cpu()))
+
+def evaluate_cls(model, data_test, final_eval=False, calibration_data=None):
+    """ evaluate on test set """
+    model.eval()
+    for j, data_batch in enumerate(data_test):
+        data_batch = data_batch[0]
+        input_vector, target_vector = data_batch[:, :-1], data_batch[:, -1]
+        output_vector = model(input_vector)
+        pred = output_vector.reshape(-1)
+        target = target_vector.double()
+        if j == 0:
+            result_true = target
+            result_pred = pred
+        else:
+            result_true = torch.cat((result_true, target), 0)
+            result_pred = torch.cat((result_pred, pred), 0)
+    BCE = torch.nn.BCEWithLogitsLoss()(result_pred, result_true)
+    result_pred = torch.sigmoid(result_pred).cpu().numpy()
+    result_true = result_true.cpu().numpy()
+    eval_acc = accuracy_score(result_true, np.round(result_pred))
+    print("Accuracy on test set is", eval_acc)
+    eval_auc = roc_auc_score(result_true, result_pred)
+    print("AUC on test set is", eval_auc)
+    JSD = - BCE + np.log(2.)
+    print("BCE loss of test set is {:.4f}, JSD of the two dists is {:.4f}".format(BCE,
+                                                                                  JSD/np.log(2.)))
+    if final_eval:
+        prob_true, prob_pred = calibration_curve(result_true, result_pred, n_bins=10)
+        print("unrescaled calibration curve:", prob_true, prob_pred)
+        calibrator = calibrate_classifier(model, calibration_data)
+        rescaled_pred = calibrator.predict(result_pred)
+        eval_acc = accuracy_score(result_true, np.round(rescaled_pred))
+        print("Rescaled accuracy is", eval_acc)
+        eval_auc = roc_auc_score(result_true, rescaled_pred)
+        print("rescaled AUC of dataset is", eval_auc)
+        prob_true, prob_pred = calibration_curve(result_true, rescaled_pred, n_bins=10)
+        print("rescaled calibration curve:", prob_true, prob_pred)
+        # calibration was done after sigmoid, therefore only BCELoss() needed here:
+        BCE = torch.nn.BCELoss()(torch.tensor(rescaled_pred), torch.tensor(result_true))
+        JSD = - BCE.cpu().numpy() + np.log(2.)
+        otp_str = "rescaled BCE loss of test set is {:.4f}, "+\
+            "rescaled JSD of the two dists is {:.4f}"
+        print(otp_str.format(BCE, JSD/np.log(2.)))
+    return eval_acc, eval_auc, JSD/np.log(2.)
+
+def calibrate_classifier(model, calibration_data):
+    """ reads in calibration data and performs a calibration with isotonic regression"""
+    model.eval()
+    assert calibration_data is not None, ("Need calibration data for calibration!")
+    for j, data_batch in enumerate(calibration_data):
+        data_batch = data_batch[0]
+        input_vector, target_vector = data_batch[:, :-1], data_batch[:, -1]
+        output_vector = model(input_vector)
+        pred = torch.sigmoid(output_vector).reshape(-1)
+        target = target_vector.to(torch.float64)
+        if j == 0:
+            result_true = target
+            result_pred = pred
+        else:
+            result_true = torch.cat((result_true, target), 0)
+            result_pred = torch.cat((result_pred, pred), 0)
+    result_true = result_true.cpu().numpy()
+    result_pred = result_pred.cpu().numpy()
+    iso_reg = IsotonicRegression(out_of_bounds='clip', y_min=1e-6, y_max=1.-1e-6).fit(result_pred,
+                                                                                      result_true)
+    return iso_reg
+
 
 def check_file(given_file, arg, which=None):
     """ checks if the provided file has the expected structure based on the dataset """
@@ -81,7 +302,7 @@ def check_file(given_file, arg, which=None):
 #    """ checks if reference pickle file of high-level features exist """
 #    return os.path.exists(os.path.join(arg.source_dir, 'reference_{}.pkl'.format(arg.dataset)))
 
-def extract_shower_and_energy(given_file, arg, which):
+def extract_shower_and_energy(given_file, which):
     """ reads .hdf5 file and returns samples and their energy """
     print("Extracting showers from {} file ...".format(which))
     shower = given_file['showers'][:]
@@ -114,11 +335,11 @@ def load_reference(filename):
         hlf_ref = pickle.load(file)
     return hlf_ref
 
-def save_reference(ref_hlf, ref_name, arg):
+def save_reference(ref_hlf, fname):
     """ Saves high-level features class to file """
     print("Saving file with high-level features.")
-    filename = os.path.splitext(os.path.basename(ref_name))[0] + '.pkl'
-    with open(os.path.join(arg.source_dir, filename), 'wb') as file:
+    #filename = os.path.splitext(os.path.basename(ref_name))[0] + '.pkl'
+    with open(fname, 'wb') as file:
         pickle.dump(ref_hlf, file)
     print("Saving file with high-level features DONE.")
 
@@ -164,7 +385,13 @@ def plot_E_layers(hlf_class, reference_class, arg):
     """ plots energy deposited in each layer """
     for key in hlf_class.GetElayers().keys():
         plt.figure(figsize=(6, 6))
-        counts_ref, bins, _ = plt.hist(reference_class.GetElayers()[key], bins=20,
+        if arg.x_scale == 'log':
+            bins = np.logspace(np.log10(arg.min_energy),
+                               np.log10(reference_class.GetElayers()[key].max()),
+                               40)
+        else:
+            bins = 40
+        counts_ref, bins, _ = plt.hist(reference_class.GetElayers()[key], bins=bins,
                                        label='reference', density=True, histtype='stepfilled',
                                        alpha=0.2, linewidth=2.)
         counts_data, _, _ = plt.hist(hlf_class.GetElayers()[key], label='generated', bins=bins,
@@ -354,40 +581,50 @@ if __name__ == '__main__':
     args = parser.parse_args()
     #print(vars(args))
 
-    source_file = h5py.File(args.input_file, 'r')
-    check_file(source_file, args, which='input')
-
     if not os.path.isdir(args.output_dir):
         os.makedirs(args.output_dir)
 
-    if not os.path.isdir(args.source_dir):
-        os.makedirs(args.source_dir)
+    #if not os.path.isdir(args.source_dir):
+    #    os.makedirs(args.source_dir)
+
+    source_file = h5py.File(args.input_file, 'r')
+    check_file(source_file, args, which='input')
 
     particle = {'1-photons': 'photon', '1-pions': 'pion',
                 '2': 'electron', '3': 'electron'}[args.dataset]
+    # minimal readout per voxel, ds1: from Michele, ds2/3: 0.5 keV / 0.033 scaling factor
+    args.min_energy = {'1-photons': 10., '1-pions': 10.,
+                       '2': 0.5/0.033, '3': 0.5/0.033}[args.dataset]
+
     hlf = HLF.HighLevelFeatures(particle,
                                 filename='binning_dataset_{}.xml'.format(
                                     args.dataset.replace('-', '_')))
+    shower, energy = extract_shower_and_energy(source_file, which='input')
 
-    if os.path.splitext(args.reference_file)[1] == '.hdf5':
-        print("using .hdf5 reference")
-        reference_file = h5py.File(args.reference_file, 'r')
-        check_file(reference_file, args, which='reference')
+    # get reference folder and name of file
+    args.source_dir, args.reference_file_name = os.path.split(args.reference_file)
+    print('Storing reference .pkl file in folder: {}'.format(args.source_dir))
+    args.reference_file_name = os.path.splitext(args.reference_file_name)[0]
+
+    reference_file = h5py.File(args.reference_file, 'r')
+    check_file(reference_file, args, which='reference')
+
+    reference_shower, reference_energy = extract_shower_and_energy(reference_file,
+                                                                   which='reference')
+    if os.path.exists(os.path.join(args.source_dir, args.reference_file_name + '.pkl')):
+        print("Loading .pkl reference")
+        reference_hlf = load_reference(os.path.join(args.source_dir,
+                                                    args.reference_file_name + '.pkl'))
+    else:
+        print("Computing .pkl reference")
         reference_hlf = HLF.HighLevelFeatures(particle,
                                               filename='binning_dataset_{}.xml'.format(
                                                   args.dataset.replace('-', '_')))
-        reference_shower, reference_energy = extract_shower_and_energy(reference_file, args,
-                                                                       which='reference')
         reference_hlf.Einc = reference_energy
-        save_reference(reference_hlf, args.reference_file, args)
+        save_reference(reference_hlf,
+                       os.path.join(args.source_dir, args.reference_file_name + '.pkl'))
 
-    elif os.path.splitext(args.reference_file)[1] == '.pkl':
-        print("using .pkl file for reference")
-        reference_hlf = load_reference(args.reference_file)
-    else:
-        raise ValueError("reference_file must be .hdf5 or .pkl!")
-
-    shower, energy = extract_shower_and_energy(source_file, args, which='input')
+    args.x_scale = 'log'
 
     # evaluations:
     if args.mode in ['all', 'avg']:
@@ -401,7 +638,8 @@ if __name__ == '__main__':
             pass
         else:
             reference_hlf.avg_shower = reference_shower.mean(axis=0, keepdims=True)
-            save_reference(reference_hlf, args.reference_file, args)
+            save_reference(reference_hlf,
+                           os.path.join(args.source_dir, args.reference_file_name + '.pkl'))
         _ = hlf.DrawAverageShower(reference_hlf.avg_shower,
                                   filename=os.path.join(
                                       args.output_dir,
@@ -439,7 +677,8 @@ if __name__ == '__main__':
                              (reference_hlf.Einc < target_energies[i+1])).squeeze()
                 reference_hlf.avg_shower_E[target_energies[i]] = \
                     reference_shower[which_showers].mean(axis=0, keepdims=True)
-                save_reference(reference_hlf, args.reference_file, args)
+                save_reference(reference_hlf,
+                               os.path.join(args.source_dir, args.reference_file_name + '.pkl'))
 
             _ = hlf.DrawAverageShower(reference_hlf.avg_shower_E[target_energies[i]],
                                       filename=os.path.join(args.output_dir,
@@ -455,7 +694,9 @@ if __name__ == '__main__':
 
         if reference_hlf.E_tot is None:
             reference_hlf.CalculateFeatures(reference_shower)
-            save_reference(reference_hlf, args.reference_file, args)
+            save_reference(reference_hlf,
+                           os.path.join(args.source_dir, args.reference_file_name + '.pkl'))
+
         print("Calculating high-level features for histograms: DONE.\n")
 
         if args.mode in ['all', 'hist-chi', 'hist']:
@@ -468,4 +709,67 @@ if __name__ == '__main__':
         print("Plotting histograms: DONE. \n")
 
     if args.mode in ['cls-low', 'cls-high']:
-        raise NotImplementedError("Stay Tuned!")
+        print("Calculating high-level features for classifier ...")
+        hlf.CalculateFeatures(shower)
+        hlf.Einc = energy
+
+        if reference_hlf.E_tot is None:
+            reference_hlf.CalculateFeatures(reference_shower)
+            save_reference(reference_hlf,
+                           os.path.join(args.source_dir, args.reference_file_name + '.pkl'))
+
+        print("Calculating high-level features for classifer: DONE.\n")
+
+        source_array = prepare_data_for_classifier(source_file, hlf, 0., normed=args.cls_normed)
+        reference_array = prepare_data_for_classifier(reference_file, reference_hlf, 1.,
+                                                      normed=args.cls_normed)
+
+        full_data = np.concatenate([source_array, reference_array], axis=0)
+
+        train_data, test_data, val_data = ttv_split(full_data)
+
+        # set up device
+        args.device = torch.device('cuda:'+str(args.which_cuda) \
+                                   if torch.cuda.is_available() and not args.no_cuda else 'cpu')
+        print("Using {}".format(args.device))
+        input_dim = full_data.shape[1]-1
+
+        DNN_kwargs = {'num_layer':args.cls_n_layer,
+                      'num_hidden':args.cls_n_hidden,
+                      'input_dim':input_dim,
+                      'dropout_probability':args.cls_dropout_probability}
+        classifier = DNN(**DNN_kwargs)
+        classifier.to(args.device)
+        print(classifier)
+        total_parameters = sum(p.numel() for p in classifier.parameters() if p.requires_grad)
+
+        print("{} has {} parameters".format(args.mode, int(total_parameters)))
+
+        optimizer = torch.optim.Adam(classifier.parameters(), lr=args.cls_lr)
+
+        train_data = TensorDataset(torch.tensor(train_data).to(args.device))
+        test_data = TensorDataset(torch.tensor(test_data).to(args.device))
+        val_data = TensorDataset(torch.tensor(val_data).to(args.device))
+
+        train_dataloader = DataLoader(train_data, batch_size=args.cls_batch_size, shuffle=True)
+        test_dataloader = DataLoader(test_data, batch_size=args.cls_batch_size, shuffle=False)
+        val_dataloader = DataLoader(val_data, batch_size=args.cls_batch_size, shuffle=False)
+
+        train_and_evaluate_cls(classifier, train_dataloader, test_dataloader, optimizer, args)
+        classifier = load_classifier(classifier, args)
+
+        with torch.no_grad():
+            print("Now looking at independent dataset:")
+            eval_acc, eval_auc, eval_JSD = evaluate_cls(classifier, val_dataloader,
+                                                        final_eval=True,
+                                                        calibration_data=test_dataloader)
+        print("Final result of classifier test (AUC / JSD):")
+        print("{:.4f} / {:.4f}".format(eval_auc, eval_JSD))
+
+
+
+    # add cell dist. plot + reference
+    # make plots next to each other
+
+    # switch to checking if pkl exist and requiring hdf5 for all runs
+    # take pkl for what was computed before, use hdf5 for cell dist. and cls.
