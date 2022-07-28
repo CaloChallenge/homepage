@@ -38,6 +38,10 @@ class HighLevelFeatures:
         self.width_phis = {}
         self.particle = particle
 
+        self.num_voxel = []
+        for idx, r_values in enumerate(self.r_edges):
+            self.num_voxel.append((len(r_values)-1)*self.num_alpha[idx])
+
     def _calculate_EC(self, eta, phi, energy):
         eta_EC = (eta * energy).sum(axis=-1)/(energy.sum(axis=-1)+1e-16)
         phi_EC = (phi * energy).sum(axis=-1)/(energy.sum(axis=-1)+1e-16)
