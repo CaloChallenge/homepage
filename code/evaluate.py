@@ -114,12 +114,12 @@ class DNN(torch.nn.Module):
         self.layers = torch.nn.Sequential(*all_layers)
 
     def forward(self, x):
+        """ Forward pass through the DNN """
         x = self.layers(x)
         return x
 
-def prepare_data_for_classifier(hdf5_file, hlf_class, label, normed=False):
+def prepare_low_data_for_classifier(hdf5_file, hlf_class, label, normed=False):
     """ takes hdf5_file, extracts Einc and voxel energies, appends label, returns array """
-    # todo: preprocessing? normalize per layer, append Ei
     if normed:
         E_norm_rep = []
         E_norm = []
@@ -137,14 +137,49 @@ def prepare_data_for_classifier(hdf5_file, hlf_class, label, normed=False):
     else:
         voxel = voxel / E_inc
         ret = np.concatenate([np.log10(E_inc), voxel, label*np.ones_like(E_inc)], axis=1)
-    print(ret.shape)
     return ret
 
-def ttv_split(data, split=np.array([0.6, 0.2, 0.2])):
-    """ splits data in train/test/val according to split, returns shuffled arrays """
-    num_events = (len(data) * split).astype(int)
-    np.random.shuffle(data)
-    train, test, val = np.split(data, num_events.cumsum()[:-1])
+def prepare_high_data_for_classifier(hdf5_file, hlf_class, label):
+    """ takes hdf5_file, extracts high-level features, appends label, returns array """
+    voxel, E_inc = extract_shower_and_energy(hdf5_file, label)
+    E_tot = hlf_class.GetEtot()
+    E_layer = []
+    for layer_id in hlf_class.GetElayers():
+        E_layer.append(hlf_class.GetElayers()[layer_id].reshape(-1, 1))
+    EC_etas = []
+    EC_phis = []
+    Width_etas = []
+    Width_phis = []
+    for layer_id in hlf_class.layersBinnedInAlpha:
+        EC_etas.append(hlf_class.GetECEtas()[layer_id].reshape(-1, 1))
+        EC_phis.append(hlf_class.GetECPhis()[layer_id].reshape(-1, 1))
+        Width_etas.append(hlf_class.GetWidthEtas()[layer_id].reshape(-1, 1))
+        Width_phis.append(hlf_class.GetWidthPhis()[layer_id].reshape(-1, 1))
+    E_layer = np.concatenate(E_layer, axis=1)
+    EC_etas = np.concatenate(EC_etas, axis=1)
+    EC_phis = np.concatenate(EC_phis, axis=1)
+    Width_etas = np.concatenate(Width_etas, axis=1)
+    Width_phis = np.concatenate(Width_phis, axis=1)
+    ret = np.concatenate([np.log10(E_inc), np.log10(E_layer+1e-8), EC_etas/1e2, EC_phis/1e2,
+                          Width_etas/1e2, Width_phis/1e2, label*np.ones_like(E_inc)], axis=1)
+    return ret
+
+def ttv_split(data1, data2, split=np.array([0.6, 0.2, 0.2])):
+    """ splits data1 and data2 in train/test/val according to split,
+        returns shuffled and merged arrays
+    """
+    assert len(data1) == len(data2)
+    num_events = (len(data1) * split).astype(int)
+    np.random.shuffle(data1)
+    np.random.shuffle(data2)
+    train1, test1, val1 = np.split(data1, num_events.cumsum()[:-1])
+    train2, test2, val2 = np.split(data2, num_events.cumsum()[:-1])
+    train = np.concatenate([train1, train2], axis=0)
+    test = np.concatenate([test1, test2], axis=0)
+    val = np.concatenate([val1, val2], axis=0)
+    np.random.shuffle(train)
+    np.random.shuffle(test)
+    np.random.shuffle(val)
     return train, test, val
 
 def load_classifier(constructed_model, parser_args):
@@ -294,14 +329,6 @@ def check_file(given_file, arg, which=None):
     print("Checking if {} file has the correct form: DONE \n".format(
         which if which is not None else 'provided'))
 
-#def check_reference(arg):
-#    """ checks if reference file for comparisons exist """
-#    return os.path.exists(os.path.join(arg.source_dir, 'reference_{}.hdf5'.format(arg.dataset)))
-
-#def check_pickle(arg):
-#    """ checks if reference pickle file of high-level features exist """
-#    return os.path.exists(os.path.join(arg.source_dir, 'reference_{}.pkl'.format(arg.dataset)))
-
 def extract_shower_and_energy(given_file, which):
     """ reads .hdf5 file and returns samples and their energy """
     print("Extracting showers from {} file ...".format(which))
@@ -309,24 +336,6 @@ def extract_shower_and_energy(given_file, which):
     energy = given_file['incident_energies'][:]
     print("Extracting showers from {} file: DONE.\n".format(which))
     return shower, energy
-
-#def create_reference(arg):
-#    """ Create pickle file with high-level features for reference in plots """
-#    print("Could not find pickle file with high-level features as reference. Creating it now ...")
-#    particle = {'1-photons': 'photon', '1-pions': 'pion',
-#                '2': 'electron', '3': 'electron'}[arg.dataset]
-#    hlf_ref = HLF.HighLevelFeatures(particle,
-#                                    filename='binning_dataset_{}.xml'.format(
-#                                        arg.dataset.replace('-', '_')))
-#    source_file = h5py.File(os.path.join(arg.source_dir, 'reference_{}.hdf5'.format(arg.dataset)),
-#                            'r')
-#    reference_showers, reference_energies = extract_shower_and_energy(source_file, arg)
-#    hlf_ref.CalculateFeatures(reference_showers)
-#    hlf_ref.Einc = reference_energies
-#    with open(os.path.join(arg.source_dir, 'reference_{}.pkl'.format(arg.dataset)), 'wb') as file:
-#        pickle.dump(hlf_ref, file)
-#    print("Creating reference pickle file: DONE.\n")
-#    return hlf_ref
 
 def load_reference(filename):
     """ Load existing pickle with high-level features for reference in plots """
@@ -561,10 +570,6 @@ def plot_ECWidthPhis(hlf_class, reference_class, arg):
                 f.write('\n\n')
         plt.close()
 
-#def download_source_reference():
-#    """ Download dataset needed for reference """
-#    raise NotImplementedError()
-
 def separation_power(hist1, hist2, bins):
     """ computes the separation power aka triangular discrimination (cf eq. 15 of 2009.03796)
         Note: the definition requires Sum (hist_i) = 1, so if hist1 and hist2 come from
@@ -579,13 +584,9 @@ def separation_power(hist1, hist2, bins):
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    #print(vars(args))
 
     if not os.path.isdir(args.output_dir):
         os.makedirs(args.output_dir)
-
-    #if not os.path.isdir(args.source_dir):
-    #    os.makedirs(args.source_dir)
 
     source_file = h5py.File(args.input_file, 'r')
     check_file(source_file, args, which='input')
@@ -720,20 +721,24 @@ if __name__ == '__main__':
 
         print("Calculating high-level features for classifer: DONE.\n")
 
-        source_array = prepare_data_for_classifier(source_file, hlf, 0., normed=args.cls_normed)
-        reference_array = prepare_data_for_classifier(reference_file, reference_hlf, 1.,
-                                                      normed=args.cls_normed)
+        if args.mode in ['cls-low']:
+            source_array = prepare_low_data_for_classifier(source_file, hlf, 0.,
+                                                           normed=args.cls_normed)
+            reference_array = prepare_low_data_for_classifier(reference_file, reference_hlf, 1.,
+                                                              normed=args.cls_normed)
+        elif args.mode in ['cls-high']:
+            source_array = prepare_high_data_for_classifier(source_file, hlf, 0.)
+            reference_array = prepare_high_data_for_classifier(reference_file, reference_hlf, 1.)
 
-        full_data = np.concatenate([source_array, reference_array], axis=0)
-
-        train_data, test_data, val_data = ttv_split(full_data)
+        train_data, test_data, val_data = ttv_split(source_array, reference_array)
 
         # set up device
         args.device = torch.device('cuda:'+str(args.which_cuda) \
                                    if torch.cuda.is_available() and not args.no_cuda else 'cpu')
         print("Using {}".format(args.device))
-        input_dim = full_data.shape[1]-1
 
+        # set up DNN classifier
+        input_dim = train_data.shape[1]-1
         DNN_kwargs = {'num_layer':args.cls_n_layer,
                       'num_hidden':args.cls_n_hidden,
                       'input_dim':input_dim,
@@ -765,6 +770,12 @@ if __name__ == '__main__':
                                                         calibration_data=test_dataloader)
         print("Final result of classifier test (AUC / JSD):")
         print("{:.4f} / {:.4f}".format(eval_auc, eval_JSD))
+        with open(os.path.join(args.output_dir, 'classifier_{}_{}.txt'.format(args.mode,
+                                                                              args.dataset)),
+                  'a') as f:
+            prep = 'normalized' if args.cls_normed else 'unnormalized'
+            f.write('Final result of classifier test (AUC / JSD) for {} data:\n'.format(prep)+\
+                    '{:.4f} / {:.4f}\n\n'.format(eval_auc, eval_JSD))
 
 
 
