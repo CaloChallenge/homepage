@@ -218,7 +218,7 @@ def train_cls(model, data_train, optim, epoch, arg):
     """ train one step """
     model.train()
     for i, data_batch in enumerate(data_train):
-        data_batch = data_batch[0]
+        data_batch = data_batch[0].to(args.device)
         #input_vector, target_vector = torch.split(data_batch, [data_batch.size()[1]-1, 1], dim=1)
         input_vector, target_vector = data_batch[:, :-1], data_batch[:, -1]
         output_vector = model(input_vector)
@@ -249,7 +249,7 @@ def evaluate_cls(model, data_test, final_eval=False, calibration_data=None):
     """ evaluate on test set """
     model.eval()
     for j, data_batch in enumerate(data_test):
-        data_batch = data_batch[0]
+        data_batch = data_batch[0].to(args.device)
         input_vector, target_vector = data_batch[:, :-1], data_batch[:, -1]
         output_vector = model(input_vector)
         pred = output_vector.reshape(-1)
@@ -294,7 +294,7 @@ def calibrate_classifier(model, calibration_data):
     model.eval()
     assert calibration_data is not None, ("Need calibration data for calibration!")
     for j, data_batch in enumerate(calibration_data):
-        data_batch = data_batch[0]
+        data_batch = data_batch[0].to(args.device)
         input_vector, target_vector = data_batch[:, :-1], data_batch[:, -1]
         output_vector = model(input_vector)
         pred = torch.sigmoid(output_vector).reshape(-1)
@@ -570,6 +570,43 @@ def plot_ECWidthPhis(hlf_class, reference_class, arg):
                 f.write('\n\n')
         plt.close()
 
+def plot_cell_dist(shower_arr, ref_shower_arr, arg):
+    """ plots voxel energies across all layers """
+    plt.figure(figsize=(6, 6))
+    if arg.x_scale == 'log':
+        bins = np.logspace(np.log10(arg.min_energy),
+                           np.log10(ref_shower_arr.max()),
+                           50)
+    else:
+        bins = 50
+
+    counts_ref, _, _ = plt.hist(ref_shower_arr.flatten(), bins=bins,
+                                label='reference', density=True, histtype='stepfilled',
+                                alpha=0.2, linewidth=2.)
+    counts_data, _, _ = plt.hist(shower_arr.flatten(), label='generated', bins=bins,
+                                 histtype='step', linewidth=3., alpha=1., density=True)
+    plt.title(r"Voxel energy distribution")
+    plt.xlabel(r'$E$ [MeV]')
+    plt.yscale('log')
+    if arg.x_scale == 'log':
+        plt.xscale('log')
+    #plt.xlim(*lim)
+    plt.legend(fontsize=20)
+    plt.tight_layout()
+    if arg.mode in ['all', 'hist-p', 'hist']:
+        filename = os.path.join(arg.output_dir,
+                                'voxel_energy_dataset_{}.png'.format(arg.dataset))
+        plt.savefig(filename, dpi=300)
+    if arg.mode in ['all', 'hist-chi', 'hist']:
+        seps = separation_power(counts_ref, counts_data, bins)
+        print("Separation power of voxel distribution histogram: {}".format(seps))
+        with open(os.path.join(arg.output_dir,
+                               'histogram_chi2_{}.txt'.format(arg.dataset)), 'a') as f:
+            f.write('Voxel distribution: \n')
+            f.write(str(seps))
+            f.write('\n\n')
+    plt.close()
+
 def separation_power(hist1, hist2, bins):
     """ computes the separation power aka triangular discrimination (cf eq. 15 of 2009.03796)
         Note: the definition requires Sum (hist_i) = 1, so if hist1 and hist2 come from
@@ -594,8 +631,8 @@ if __name__ == '__main__':
     particle = {'1-photons': 'photon', '1-pions': 'pion',
                 '2': 'electron', '3': 'electron'}[args.dataset]
     # minimal readout per voxel, ds1: from Michele, ds2/3: 0.5 keV / 0.033 scaling factor
-    args.min_energy = {'1-photons': 10., '1-pions': 10.,
-                       '2': 0.5/0.033, '3': 0.5/0.033}[args.dataset]
+    args.min_energy = {'1-photons': 10, '1-pions': 10,
+                       '2': 0.5e-3/0.033, '3': 0.5e-3/0.033}[args.dataset]
 
     hlf = HLF.HighLevelFeatures(particle,
                                 filename='binning_dataset_{}.xml'.format(
@@ -707,6 +744,7 @@ if __name__ == '__main__':
                         ' see eq. 15 of 2009.03796 for its definition.\n')
         print("Plotting histograms ...")
         plot_histograms(hlf, reference_hlf, args)
+        plot_cell_dist(shower, reference_shower, args)
         print("Plotting histograms: DONE. \n")
 
     if args.mode in ['cls-low', 'cls-high']:
@@ -752,9 +790,14 @@ if __name__ == '__main__':
 
         optimizer = torch.optim.Adam(classifier.parameters(), lr=args.cls_lr)
 
-        train_data = TensorDataset(torch.tensor(train_data).to(args.device))
-        test_data = TensorDataset(torch.tensor(test_data).to(args.device))
-        val_data = TensorDataset(torch.tensor(val_data).to(args.device))
+        # todo: optimize memory usage. moving data to gpu here is faster, but
+        # dataset2 wont fit on my gpu, so I have to move it inside train/eval/calib.
+        #train_data = TensorDataset(torch.tensor(train_data).to(args.device))
+        #test_data = TensorDataset(torch.tensor(test_data).to(args.device))
+        #val_data = TensorDataset(torch.tensor(val_data).to(args.device))
+        train_data = TensorDataset(torch.tensor(train_data))
+        test_data = TensorDataset(torch.tensor(test_data))
+        val_data = TensorDataset(torch.tensor(val_data))
 
         train_dataloader = DataLoader(train_data, batch_size=args.cls_batch_size, shuffle=True)
         test_dataloader = DataLoader(test_data, batch_size=args.cls_batch_size, shuffle=False)
@@ -779,8 +822,4 @@ if __name__ == '__main__':
 
 
 
-    # add cell dist. plot + reference
     # make plots next to each other
-
-    # switch to checking if pkl exist and requiring hdf5 for all runs
-    # take pkl for what was computed before, use hdf5 for cell dist. and cls.
