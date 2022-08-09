@@ -2,9 +2,14 @@
 """ Main script to evaluate contributions to the Fast Calorimeter Challenge 2022
 
     input:
-        - set of events in .hdf5 file format
+        - set of events in .hdf5 file format (same shape as training data)
     output:
         - metrics for evaluation (plots, classifier scores, etc.)
+
+    usage:
+        -i --input_file: Name and path of the input file to be evaluated.
+        -r --reference_file: Name and path of the reference .hdf5 file. A .pkl file will be
+                             created at the same location for faster subsequent evaluations.
 
 """
 
@@ -43,7 +48,7 @@ parser.add_argument('--reference_file', '-r',
                     'in the first run for faster runtime in subsequent runs.')
 parser.add_argument('--mode', '-m', default='all',
                     choices=['all', 'avg', 'avg-E', 'hist-p', 'hist-chi', 'hist',
-                             'cls-low', 'cls-high'],
+                             'cls-low', 'cls-low-normed', 'cls-high'],
                     help=("What metric to evaluate: " +\
                           "'avg' plots the shower average;" +\
                           "'avg-E' plots the shower average for energy ranges;" +\
@@ -51,8 +56,11 @@ parser.add_argument('--mode', '-m', default='all',
                           "'hist-chi' evaluates a chi2 of the histograms;" +\
                           "'hist' evaluates a chi2 of the histograms and plots them;" +\
                           "'cls-low' trains a classifier on the low-level feautures;" +\
+                          "'cls-low-normed' trains a classifier on the low-level feautures" +\
+                          " with calorimeter layers normalized to 1;" +\
                           "'cls-high' trains a classifier on the high-level features;" +\
-                          "'all' does the full evaluation, ie all of the above."))
+                          "'all' does the full evaluation, ie all of the above" +\
+                          " with low-level classifier."))
 parser.add_argument('--dataset', '-d', choices=['1-photons', '1-pions', '2', '3'],
                     help='Which dataset is evaluated.')
 parser.add_argument('--output_dir', default='evaluation_results/',
@@ -62,6 +70,7 @@ parser.add_argument('--output_dir', default='evaluation_results/',
 #                    ' comparative evaluations (high level features stored in .pkl or '+\
 #                   'datasets prepared for classifier runs.).')
 
+
 # classifier options
 
 # not possible since train/test/val split is done differently each time
@@ -69,8 +78,8 @@ parser.add_argument('--output_dir', default='evaluation_results/',
 #parser.add_argument('--cls_load', action='store_true', default=False,
 #                    help='Whether or not load classifier from --output_dir')
 
-parser.add_argument('--cls_normed', action='store_true',
-                    help='Train classifier on showers normed by layer.')
+#parser.add_argument('--cls_normed', action='store_true',
+#                    help='Train classifier on showers normed by layer.')
 parser.add_argument('--cls_n_layer', type=int, default=2,
                     help='Number of hidden layers in the classifier, default is 2.')
 parser.add_argument('--cls_n_hidden', type=int, default='512',
@@ -89,6 +98,9 @@ parser.add_argument('--cls_lr', type=float, default=2e-4,
 parser.add_argument('--no_cuda', action='store_true', help='Do not use cuda.')
 parser.add_argument('--which_cuda', default=0, type=int,
                     help='Which cuda device to use')
+# todo: check timing of that for dataset2 on pascal2
+parser.add_argument('--save_mem', action='store_true',
+                    help='Data is moved to GPU batch by batch instead of once in total.')
 
 ########## Functions and Classes ##########
 
@@ -212,13 +224,18 @@ def train_and_evaluate_cls(model, data_train, data_test, optim, arg):
             if eval_acc == 1.:
                 break
     except KeyboardInterrupt:
+        # training can be cut short with ctrl+c, for example if overfitting between train/test set
+        # is clearly visible
         pass
 
 def train_cls(model, data_train, optim, epoch, arg):
     """ train one step """
     model.train()
     for i, data_batch in enumerate(data_train):
-        data_batch = data_batch[0].to(args.device)
+        if args.save_mem:
+            data_batch = data_batch[0].to(args.device)
+        else:
+            data_batch = data_batch[0]
         #input_vector, target_vector = torch.split(data_batch, [data_batch.size()[1]-1, 1], dim=1)
         input_vector, target_vector = data_batch[:, :-1], data_batch[:, -1]
         output_vector = model(input_vector)
@@ -249,7 +266,10 @@ def evaluate_cls(model, data_test, final_eval=False, calibration_data=None):
     """ evaluate on test set """
     model.eval()
     for j, data_batch in enumerate(data_test):
-        data_batch = data_batch[0].to(args.device)
+        if args.save_mem:
+            data_batch = data_batch[0].to(args.device)
+        else:
+            data_batch = data_batch[0]
         input_vector, target_vector = data_batch[:, :-1], data_batch[:, -1]
         output_vector = model(input_vector)
         pred = output_vector.reshape(-1)
@@ -294,7 +314,10 @@ def calibrate_classifier(model, calibration_data):
     model.eval()
     assert calibration_data is not None, ("Need calibration data for calibration!")
     for j, data_batch in enumerate(calibration_data):
-        data_batch = data_batch[0].to(args.device)
+        if args.save_mem:
+            data_batch = data_batch[0].to(args.device)
+        else:
+            data_batch = data_batch[0]
         input_vector, target_vector = data_batch[:, :-1], data_batch[:, -1]
         output_vector = model(input_vector)
         pred = torch.sigmoid(output_vector).reshape(-1)
@@ -747,7 +770,7 @@ if __name__ == '__main__':
         plot_cell_dist(shower, reference_shower, args)
         print("Plotting histograms: DONE. \n")
 
-    if args.mode in ['cls-low', 'cls-high']:
+    if args.mode in ['all', 'cls-low', 'cls-high', 'cls-low-normed']:
         print("Calculating high-level features for classifier ...")
         hlf.CalculateFeatures(shower)
         hlf.Einc = energy
@@ -759,11 +782,16 @@ if __name__ == '__main__':
 
         print("Calculating high-level features for classifer: DONE.\n")
 
-        if args.mode in ['cls-low']:
+        if args.mode in ['all', 'cls-low']:
             source_array = prepare_low_data_for_classifier(source_file, hlf, 0.,
-                                                           normed=args.cls_normed)
+                                                           normed=False)
             reference_array = prepare_low_data_for_classifier(reference_file, reference_hlf, 1.,
-                                                              normed=args.cls_normed)
+                                                              normed=False)
+        elif args.mode in ['cls-low-normed']:
+            source_array = prepare_low_data_for_classifier(source_file, hlf, 0.,
+                                                           normed=True)
+            reference_array = prepare_low_data_for_classifier(reference_file, reference_hlf, 1.,
+                                                              normed=True)
         elif args.mode in ['cls-high']:
             source_array = prepare_high_data_for_classifier(source_file, hlf, 0.)
             reference_array = prepare_high_data_for_classifier(reference_file, reference_hlf, 1.)
@@ -790,14 +818,14 @@ if __name__ == '__main__':
 
         optimizer = torch.optim.Adam(classifier.parameters(), lr=args.cls_lr)
 
-        # todo: optimize memory usage. moving data to gpu here is faster, but
-        # dataset2 wont fit on my gpu, so I have to move it inside train/eval/calib.
-        #train_data = TensorDataset(torch.tensor(train_data).to(args.device))
-        #test_data = TensorDataset(torch.tensor(test_data).to(args.device))
-        #val_data = TensorDataset(torch.tensor(val_data).to(args.device))
-        train_data = TensorDataset(torch.tensor(train_data))
-        test_data = TensorDataset(torch.tensor(test_data))
-        val_data = TensorDataset(torch.tensor(val_data))
+        if args.save_mem:
+            train_data = TensorDataset(torch.tensor(train_data))
+            test_data = TensorDataset(torch.tensor(test_data))
+            val_data = TensorDataset(torch.tensor(val_data))
+        else:
+            train_data = TensorDataset(torch.tensor(train_data).to(args.device))
+            test_data = TensorDataset(torch.tensor(test_data).to(args.device))
+            val_data = TensorDataset(torch.tensor(val_data).to(args.device))
 
         train_dataloader = DataLoader(train_data, batch_size=args.cls_batch_size, shuffle=True)
         test_dataloader = DataLoader(test_data, batch_size=args.cls_batch_size, shuffle=False)
@@ -816,8 +844,7 @@ if __name__ == '__main__':
         with open(os.path.join(args.output_dir, 'classifier_{}_{}.txt'.format(args.mode,
                                                                               args.dataset)),
                   'a') as f:
-            prep = 'normalized' if args.cls_normed else 'unnormalized'
-            f.write('Final result of classifier test (AUC / JSD) for {} data:\n'.format(prep)+\
+            f.write('Final result of classifier test (AUC / JSD):\n'+\
                     '{:.4f} / {:.4f}\n\n'.format(eval_auc, eval_JSD))
 
 
