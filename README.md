@@ -37,7 +37,7 @@ Each CaloChallenge dataset comes as one or more .hdf5 files that were written wi
 Datasets 2 and 3 are simulated with the same physical detector which is composed of concentric cylinders, with 90 layers of absorber and sensitive (active) material, which is Tungsten (W) and Silicon (Si), respectively. The thickness of each sub-layer is 1.4mm of W and 0.3 mm of Si, so the total detector depth is 153 mm. The inner radius of the detector is 80 cm. <br>
 Readout segmentation is done relevant to the direction of the particle entering the calorimeter. The direction of the particle determines the z-axis of the cylindrical coordinate system, and the entrance position in the calorimeter is (0,0,0). Voxels (readout cells) have the same size in z for both datasets 2 and 3, and they differ in terms of the segmentation in radius (r) and in angle (&alpha;). <br>
 For z-axis the size of the voxel is 3.4 mm, which corresponds to two physical layers (W-Si-W-Si), and taking into account only the absorber value of radiation length (X0(W)=3.504mm) it makes the z-cell size corresponding to 2*1.4mm/3.504mm = 0.8 X0. In radius the size of the cells is 2.325 mm for dataset 3 and 4.65 mm for dataset 2, which in approximation, taking the Moliere radius of W only, is 0.25 RM for dataset 3 and 0.5 for dataset 2. In &alpha; we have 50 cells for dataset 3 and 16 cells for dataset 2, making the size 2&pi;/50 and 2&pi;/16. <br>
-The energy threshold for the readout per voxel in datasets 2 and 3 is 0.5 keV.
+The energy threshold for the readout per voxel in datasets 2 and 3 is 15.15 keV.
 </p>
 
 <p style='text-align: justify;'>
