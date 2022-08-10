@@ -383,6 +383,54 @@ def plot_histograms(hlf_class, reference_class, arg):
     plot_ECPhis(hlf_class, reference_class, arg)
     plot_ECWidthEtas(hlf_class, reference_class, arg)
     plot_ECWidthPhis(hlf_class, reference_class, arg)
+    if arg.dataset[0] == '1':
+        plot_Etot_Einc_discrete(hlf_class, reference_class, arg)
+
+def plot_Etot_Einc_discrete(hlf_class, reference_class, arg):
+    """ plots Etot normalized to Einc histograms for each Einc in ds1 """
+    # hardcode boundaries?
+    bins = np.linspace(0.4, 1.4, 21)
+    plt.figure(figsize=(10, 10))
+    target_energies = 2**np.linspace(8, 23, 16)
+    for i in range(len(target_energies)-1):
+        if i > 3 and 'photons' in arg.dataset:
+            bins = np.linspace(0.9, 1.1, 21)
+        energy = target_energies[i]
+        which_showers_ref = ((reference_class.Einc.squeeze() >= target_energies[i]) & \
+                             (reference_class.Einc.squeeze() < target_energies[i+1])).squeeze()
+        which_showers_hlf = ((hlf_class.Einc.squeeze() >= target_energies[i]) & \
+                             (hlf_class.Einc.squeeze() < target_energies[i+1])).squeeze()
+        ax = plt.subplot(4, 4, i+1)
+        counts_ref, _, _ = ax.hist(reference_class.GetEtot()[which_showers_ref] /\
+                                   reference_class.Einc.squeeze()[which_showers_ref],
+                                   bins=bins, label='reference', density=True,
+                                   histtype='stepfilled', alpha=0.2, linewidth=2.)
+        counts_data, _, _ = ax.hist(hlf_class.GetEtot()[which_showers_hlf] /\
+                                    hlf_class.Einc.squeeze()[which_showers_hlf], bins=bins,
+                                    label='generated', histtype='step', linewidth=3., alpha=1.,
+                                    density=True)
+        if i in [0, 1, 2]:
+            energy_label = 'E = {:.0f} MeV'.format(energy)
+        elif i in np.arange(3, 12):
+            energy_label = 'E = {:.1f} GeV'.format(energy/1e3)
+        else:
+            energy_label = 'E = {:.1f} TeV'.format(energy/1e6)
+        ax.text(0.5, 0.95, energy_label, ha='center', va='top',
+                transform=ax.transAxes)
+        seps = separation_power(counts_ref, counts_data, bins)
+        print("Separation power of Etot / Einc at E = {} histogram: {}".format(energy, seps))
+        with open(os.path.join(arg.output_dir, 'histogram_chi2_{}.txt'.format(arg.dataset)),
+                  'a') as f:
+            f.write('Etot / Einc at E = {}: \n'.format(energy))
+            f.write(str(seps))
+            f.write('\n\n')
+        h, l = ax.get_legend_handles_labels()
+    ax = plt.subplot(4, 4, 16)
+    ax.legend(h, l, loc='center')
+    ax.axis('off')
+    filename = os.path.join(arg.output_dir, 'Etot_Einc_dataset_{}_E_i.png'.format(arg.dataset))
+    plt.savefig(filename, dpi=300)
+    plt.close()
 
 def plot_Etot_Einc(hlf_class, reference_class, arg):
     """ plots Etot normalized to Einc histogram """
