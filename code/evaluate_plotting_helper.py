@@ -17,18 +17,18 @@ def plot_layer_comparison(hlf_class, data, reference_class, reference_data, arg,
     num_layer = len(reference_class.relevantLayers)
     vmax = np.max(reference_data)
     layer_boundaries = np.unique(reference_class.bin_edges)
-    for layer_id in range(num_layer):
+    for idx, layer_id in enumerate(reference_class.relevantLayers):
         plt.figure(figsize=(6, 4))
         reference_data_processed = reference_data\
-            [:, layer_boundaries[layer_id]:layer_boundaries[layer_id+1]]
+            [:, layer_boundaries[idx]:layer_boundaries[idx+1]]
         reference_class._DrawSingleLayer(reference_data_processed,
-                                         layer_id, filename=None,
+                                         idx, filename=None,
                                          title='Reference Layer '+str(layer_id),
                                          fig=plt.gcf(), subplot=(1, 2, 1), vmax=vmax,
                                          colbar='None')
-        data_processed = data[:, layer_boundaries[layer_id]:layer_boundaries[layer_id+1]]
+        data_processed = data[:, layer_boundaries[idx]:layer_boundaries[idx+1]]
         hlf_class._DrawSingleLayer(data_processed,
-                                   layer_id, filename=None,
+                                   idx, filename=None,
                                    title='Generated Layer '+str(layer_id),
                                    fig=plt.gcf(), subplot=(1, 2, 2), vmax=vmax, colbar='both')
 
