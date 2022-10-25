@@ -63,7 +63,9 @@ Participants will be scored using a variety of metrics. We will include more det
 <p style='text-align: justify;'>
 It is expected that there will not necessarily be a single clear winner, but different methods will have their pros and cons.</p>
 <p style='text-align: justify;'>
-A script to perform the evaluation is available on the <a href="https://github.com/CaloChallenge/homepage/tree/main/code">Github page</a>. <a href="https://github.com/CaloChallenge/homepage/tree/main/code/Evaluation-visualization.ipynb">Here</a>, we provide an interactive notebook version of the evaluation script. More options will be added in the near future. 
+A script to perform the evaluation is available on the <a href="https://github.com/CaloChallenge/homepage/tree/main/code">Github page</a>. More options will be added in the near future.
+
+<!-- <a href="https://github.com/CaloChallenge/homepage/tree/main/code/Evaluation-visualization.ipynb">Here</a>, we provide an interactive notebook version of the evaluation script. -->  
 </p>
 <p style='text-align: justify;'>
 In order to run the evaluation, the generated showers should be saved in the same format inside a .hdf5 file as the training showers. Such a file can be created with
