@@ -10,7 +10,26 @@
         -i --input_file: Name and path of the input file to be evaluated.
         -r --reference_file: Name and path of the reference .hdf5 file. A .pkl file will be
                              created at the same location for faster subsequent evaluations.
+        -m --mode: Which metric to look at. Choices are
+                   'all': does all of the below (with low-level classifier).
+                   'avg': plots the average shower of the whole dataset.
+                   'avg-E': plots the average showers at different energy (ranges).
+                   'hist-p': plots histograms of high-level features.
+                   'hist-chi': computes the chi2 difference of the histograms.
+                   'hist': plots histograms and computes chi2.
+                   'cls-low': trains a classifier on low-level features (voxels).
+                   'cls-low-normed': trains a classifier on normalized voxels.
+                   'cls-high': trains a classifier on high-level features (same as histograms).
+        -d --dataset: Which dataset the evaluation is for. Choices are
+                      '1-photons', '1-pions', '2', '3'
+           --output_dir: Folder in which the evaluation results (plots, scores) are saved.
+           --save_mem: If included, data is moved to the GPU batch by batch instead of once.
+                       This reduced the memory footprint a lot, especially for datasets 2 and 3.
 
+           --no_cuda: if added, code will not run on GPU, even if available.
+           --which_cuda: Which GPU to use if multiple are available.
+
+    additional options for the classifier start with --cls_ and can be found below.
 """
 
 import argparse
@@ -80,8 +99,6 @@ parser.add_argument('--output_dir', default='evaluation_results/',
 #parser.add_argument('--cls_load', action='store_true', default=False,
 #                    help='Whether or not load classifier from --output_dir')
 
-#parser.add_argument('--cls_normed', action='store_true',
-#                    help='Train classifier on showers normed by layer.')
 parser.add_argument('--cls_n_layer', type=int, default=2,
                     help='Number of hidden layers in the classifier, default is 2.')
 parser.add_argument('--cls_n_hidden', type=int, default='512',
@@ -100,7 +117,7 @@ parser.add_argument('--cls_lr', type=float, default=2e-4,
 parser.add_argument('--no_cuda', action='store_true', help='Do not use cuda.')
 parser.add_argument('--which_cuda', default=0, type=int,
                     help='Which cuda device to use')
-# todo: check timing of that for dataset2 on pascal2
+
 parser.add_argument('--save_mem', action='store_true',
                     help='Data is moved to GPU batch by batch instead of once in total.')
 
@@ -601,5 +618,4 @@ if __name__ == '__main__':
 
 
 
-    # make plots next to each other
     # todo: sparsity
