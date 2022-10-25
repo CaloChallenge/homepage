@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 
 
-def plot_layer_comparison(hlf_class, data, reference_class, reference_data, arg, show_only=False):
+def plot_layer_comparison(hlf_class, data, reference_class, reference_data, arg, show=False):
     """ plots showers of of data and reference next to each other, for comparison """
     num_layer = len(reference_class.relevantLayers)
     vmax = np.max(reference_data)
@@ -34,10 +34,9 @@ def plot_layer_comparison(hlf_class, data, reference_class, reference_data, arg,
 
         filename = os.path.join(arg.output_dir,
                                 'Average_Layer_{}_dataset_{}.png'.format(layer_id, arg.dataset))
-        if show_only:
+        plt.savefig(filename, dpi=300)
+        if show:
             plt.show()
-        else:
-            plt.savefig(filename, dpi=300)
         plt.close()
 
 def plot_Etot_Einc_discrete(hlf_class, reference_class, arg):
