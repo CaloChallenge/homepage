@@ -233,10 +233,10 @@ def train_and_evaluate_cls(model, data_train, data_test, optim, arg):
         for i in range(arg.cls_n_epochs):
             train_cls(model, data_train, optim, i, arg)
             with torch.no_grad():
-                eval_acc, _, _ = evaluate_cls(model, data_test)
+                eval_acc, _, _ = evaluate_cls(model, data_test, arg)
             if eval_acc > best_eval_acc:
                 best_eval_acc = eval_acc
-                args.best_epoch = i+1
+                arg.best_epoch = i+1
                 filename = arg.mode + '_' + arg.dataset + '.pt'
                 torch.save({'model_state_dict':model.state_dict()},
                            os.path.join(arg.output_dir, filename))
@@ -251,8 +251,8 @@ def train_cls(model, data_train, optim, epoch, arg):
     """ train one step """
     model.train()
     for i, data_batch in enumerate(data_train):
-        if args.save_mem:
-            data_batch = data_batch[0].to(args.device)
+        if arg.save_mem:
+            data_batch = data_batch[0].to(arg.device)
         else:
             data_batch = data_batch[0]
         #input_vector, target_vector = torch.split(data_batch, [data_batch.size()[1]-1, 1], dim=1)
@@ -281,12 +281,12 @@ def train_cls(model, data_train, optim, epoch, arg):
     print("Accuracy on training set is",
           accuracy_score(res_true.cpu(), res_pred.cpu()))
 
-def evaluate_cls(model, data_test, final_eval=False, calibration_data=None):
+def evaluate_cls(model, data_test, arg, final_eval=False, calibration_data=None):
     """ evaluate on test set """
     model.eval()
     for j, data_batch in enumerate(data_test):
-        if args.save_mem:
-            data_batch = data_batch[0].to(args.device)
+        if arg.save_mem:
+            data_batch = data_batch[0].to(arg.device)
         else:
             data_batch = data_batch[0]
         input_vector, target_vector = data_batch[:, :-1], data_batch[:, -1]
@@ -312,7 +312,7 @@ def evaluate_cls(model, data_test, final_eval=False, calibration_data=None):
     if final_eval:
         prob_true, prob_pred = calibration_curve(result_true, result_pred, n_bins=10)
         print("unrescaled calibration curve:", prob_true, prob_pred)
-        calibrator = calibrate_classifier(model, calibration_data)
+        calibrator = calibrate_classifier(model, calibration_data, arg)
         rescaled_pred = calibrator.predict(result_pred)
         eval_acc = accuracy_score(result_true, np.round(rescaled_pred))
         print("Rescaled accuracy is", eval_acc)
@@ -328,13 +328,13 @@ def evaluate_cls(model, data_test, final_eval=False, calibration_data=None):
         print(otp_str.format(BCE, JSD/np.log(2.)))
     return eval_acc, eval_auc, JSD/np.log(2.)
 
-def calibrate_classifier(model, calibration_data):
+def calibrate_classifier(model, calibration_data, arg):
     """ reads in calibration data and performs a calibration with isotonic regression"""
     model.eval()
     assert calibration_data is not None, ("Need calibration data for calibration!")
     for j, data_batch in enumerate(calibration_data):
-        if args.save_mem:
-            data_batch = data_batch[0].to(args.device)
+        if arg.save_mem:
+            data_batch = data_batch[0].to(arg.device)
         else:
             data_batch = data_batch[0]
         input_vector, target_vector = data_batch[:, :-1], data_batch[:, -1]
@@ -605,7 +605,7 @@ if __name__ == '__main__':
 
         with torch.no_grad():
             print("Now looking at independent dataset:")
-            eval_acc, eval_auc, eval_JSD = evaluate_cls(classifier, val_dataloader,
+            eval_acc, eval_auc, eval_JSD = evaluate_cls(classifier, val_dataloader, args,
                                                         final_eval=True,
                                                         calibration_data=test_dataloader)
         print("Final result of classifier test (AUC / JSD):")
