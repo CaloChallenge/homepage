@@ -459,23 +459,23 @@ if __name__ == '__main__':
                               reference_hlf, reference_shower.mean(axis=0, keepdims=True), args)
         print("Plotting average shower next to reference: DONE.\n")
         print("Plotting average shower...")
-        _ = hlf.DrawAverageShower(shower,
-                                  filename=os.path.join(args.output_dir,
-                                                        'average_shower_dataset_{}.png'.format(
-                                                            args.dataset)),
-                                  title="Shower average")
+        hlf.DrawAverageShower(shower,
+                              filename=os.path.join(args.output_dir,
+                                                    'average_shower_dataset_{}.png'.format(
+                                                        args.dataset)),
+                              title="Shower average")
         if hasattr(reference_hlf, 'avg_shower'):
             pass
         else:
             reference_hlf.avg_shower = reference_shower.mean(axis=0, keepdims=True)
             save_reference(reference_hlf,
                            os.path.join(args.source_dir, args.reference_file_name + '.pkl'))
-        _ = hlf.DrawAverageShower(reference_hlf.avg_shower,
-                                  filename=os.path.join(
-                                      args.output_dir,
-                                      'reference_average_shower_dataset_{}.png'.format(
-                                          args.dataset)),
-                                  title="Shower average reference dataset")
+        hlf.DrawAverageShower(reference_hlf.avg_shower,
+                              filename=os.path.join(
+                                  args.output_dir,
+                                  'reference_average_shower_dataset_{}.png'.format(
+                                      args.dataset)),
+                              title="Shower average reference dataset")
         print("Plotting average shower: DONE.\n")
 
     if args.mode in ['all', 'avg-E']:
@@ -493,9 +493,9 @@ if __name__ == '__main__':
                                                                    target_energies[i])
             which_showers = ((energy >= target_energies[i]) & \
                              (energy < target_energies[i+1])).squeeze()
-            _ = hlf.DrawAverageShower(shower[which_showers],
-                                      filename=os.path.join(args.output_dir, filename),
-                                      title=plot_title[i])
+            hlf.DrawAverageShower(shower[which_showers],
+                                  filename=os.path.join(args.output_dir, filename),
+                                  title=plot_title[i])
             if hasattr(reference_hlf, 'avg_shower_E'):
                 pass
             else:
@@ -510,10 +510,10 @@ if __name__ == '__main__':
                 save_reference(reference_hlf,
                                os.path.join(args.source_dir, args.reference_file_name + '.pkl'))
 
-            _ = hlf.DrawAverageShower(reference_hlf.avg_shower_E[target_energies[i]],
-                                      filename=os.path.join(args.output_dir,
-                                                            'reference_'+filename),
-                                      title='reference '+plot_title[i])
+            hlf.DrawAverageShower(reference_hlf.avg_shower_E[target_energies[i]],
+                                  filename=os.path.join(args.output_dir,
+                                                        'reference_'+filename),
+                                  title='reference '+plot_title[i])
 
         print("Plotting average shower for different energies: DONE.\n")
 
