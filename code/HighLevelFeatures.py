@@ -189,7 +189,7 @@ class HighLevelFeatures:
             plt.savefig(filename, facecolor='white')
         else:
             plt.show()
-        return fig
+        plt.close()
 
     def GetEtot(self):
         """ returns total energy of the showers """
@@ -217,8 +217,7 @@ class HighLevelFeatures:
 
     def DrawAverageShower(self, data, filename=None, title=None):
         """ plots average of provided showers """
-        ret = self._DrawShower(data.mean(axis=0), filename=filename, title=title)
-        return ret
+        self._DrawShower(data.mean(axis=0), filename=filename, title=title)
 
     def DrawSingleShower(self, data, filename=None, title=None):
         """ plots all provided showers after each other """
@@ -231,8 +230,7 @@ class HighLevelFeatures:
                 local_name += '_{}'.format(num) + local_ext
             else:
                 local_name = None
-            ret.append(self._DrawShower(shower, filename=local_name, title=title))
-        return ret
+            self._DrawShower(shower, filename=local_name, title=title)
 
     def DrawHistoEtot(self, filename=None):
         raise NotImplementedError()
