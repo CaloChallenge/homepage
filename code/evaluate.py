@@ -540,16 +540,19 @@ if __name__ == '__main__':
         print("Plotting histograms: DONE. \n")
 
     if args.mode in ['all', 'cls-low', 'cls-high', 'cls-low-normed']:
-        print("Calculating high-level features for classifier ...")
-        hlf.CalculateFeatures(shower)
-        hlf.Einc = energy
+        # only needed if low-normed or high:
+        if args.mode != 'cls-low':
 
-        if reference_hlf.E_tot is None:
-            reference_hlf.CalculateFeatures(reference_shower)
-            save_reference(reference_hlf,
-                           os.path.join(args.source_dir, args.reference_file_name + '.pkl'))
+            print("Calculating high-level features for classifier ...")
+            hlf.CalculateFeatures(shower)
+            hlf.Einc = energy
 
-        print("Calculating high-level features for classifer: DONE.\n")
+            if reference_hlf.E_tot is None:
+                reference_hlf.CalculateFeatures(reference_shower)
+                save_reference(reference_hlf,
+                               os.path.join(args.source_dir, args.reference_file_name + '.pkl'))
+
+            print("Calculating high-level features for classifer: DONE.\n")
 
         if args.mode in ['all', 'cls-low']:
             source_array = prepare_low_data_for_classifier(source_file, hlf, 0.,
