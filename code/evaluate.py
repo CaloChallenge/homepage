@@ -149,7 +149,7 @@ class DNN(torch.nn.Module):
         x = self.layers(x)
         return x
 
-def prepare_low_data_for_classifier(hdf5_file, hlf_class, label, normed=False):
+def prepare_low_data_for_classifier(voxel, E_inc, hlf_class, label, normed=False):
     """ takes hdf5_file, extracts Einc and voxel energies, appends label, returns array """
     if normed:
         E_norm_rep = []
@@ -160,7 +160,7 @@ def prepare_low_data_for_classifier(hdf5_file, hlf_class, label, normed=False):
             E_norm.append(hlf_class.GetElayers()[layer_id].reshape(-1, 1))
         E_norm_rep = np.concatenate(E_norm_rep, axis=1)
         E_norm = np.concatenate(E_norm, axis=1)
-    voxel, E_inc = extract_shower_and_energy(hdf5_file, label)
+    #voxel, E_inc = extract_shower_and_energy(hdf5_file, label)
     if normed:
         voxel = voxel / (E_norm_rep+1e-16)
         ret = np.concatenate([np.log10(E_inc), voxel, np.log10(E_norm+1e-8),
@@ -170,9 +170,9 @@ def prepare_low_data_for_classifier(hdf5_file, hlf_class, label, normed=False):
         ret = np.concatenate([np.log10(E_inc), voxel, label*np.ones_like(E_inc)], axis=1)
     return ret
 
-def prepare_high_data_for_classifier(hdf5_file, hlf_class, label):
+def prepare_high_data_for_classifier(E_inc, hlf_class, label):
     """ takes hdf5_file, extracts high-level features, appends label, returns array """
-    voxel, E_inc = extract_shower_and_energy(hdf5_file, label)
+    #voxel, E_inc = extract_shower_and_energy(hdf5_file, label)
     E_tot = hlf_class.GetEtot()
     E_layer = []
     for layer_id in hlf_class.GetElayers():
@@ -555,18 +555,20 @@ if __name__ == '__main__':
             print("Calculating high-level features for classifer: DONE.\n")
 
         if args.mode in ['all', 'cls-low']:
-            source_array = prepare_low_data_for_classifier(source_file, hlf, 0.,
+            source_array = prepare_low_data_for_classifier(shower, energy, hlf, 0.,
                                                            normed=False)
-            reference_array = prepare_low_data_for_classifier(reference_file, reference_hlf, 1.,
+            reference_array = prepare_low_data_for_classifier(reference_shower,
+                                                              reference_energy, reference_hlf, 1.,
                                                               normed=False)
         elif args.mode in ['cls-low-normed']:
-            source_array = prepare_low_data_for_classifier(source_file, hlf, 0.,
+            source_array = prepare_low_data_for_classifier(shower, energy, hlf, 0.,
                                                            normed=True)
-            reference_array = prepare_low_data_for_classifier(reference_file, reference_hlf, 1.,
+            reference_array = prepare_low_data_for_classifier(reference_shower,
+                                                              reference_energy, reference_hlf, 1.,
                                                               normed=True)
         elif args.mode in ['cls-high']:
-            source_array = prepare_high_data_for_classifier(source_file, hlf, 0.)
-            reference_array = prepare_high_data_for_classifier(reference_file, reference_hlf, 1.)
+            source_array = prepare_high_data_for_classifier(shower, hlf, 0.)
+            reference_array = prepare_high_data_for_classifier(reference_shower, reference_hlf, 1.)
 
         train_data, test_data, val_data = ttv_split(source_array, reference_array)
 
