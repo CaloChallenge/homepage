@@ -376,6 +376,7 @@ def extract_shower_and_energy(given_file, which):
     print("Extracting showers from {} file ...".format(which))
     shower = given_file['showers'][:]
     energy = given_file['incident_energies'][:]
+    given_file.close()
     print("Extracting showers from {} file: DONE.\n".format(which))
     return shower, energy
 
