@@ -166,7 +166,7 @@ def prepare_low_data_for_classifier(voxel, E_inc, hlf_class, label, normed=False
         ret = np.concatenate([np.log10(E_inc), voxel, np.log10(E_norm+1e-8),
                               label*np.ones_like(E_inc)], axis=1)
     else:
-        voxel = 10.* voxel / E_inc
+        voxel = 100.* voxel / E_inc
         ret = np.concatenate([np.log10(E_inc), voxel, label*np.ones_like(E_inc)], axis=1)
     return ret
 
