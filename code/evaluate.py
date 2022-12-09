@@ -91,6 +91,14 @@ parser.add_argument('--output_dir', default='evaluation_results/',
 #                    ' comparative evaluations (high level features stored in .pkl or '+\
 #                   'datasets prepared for classifier runs.).')
 
+# for ds3 classifier runs:
+parser.add_argument('--input_file_2', default=None,
+                    help='Name of the 2nd input file to be evaluated.')
+parser.add_argument('--reference_file_2', default=None,
+                    help='Name and path of the 2nd .hdf5 file to be used in evaluation of ds 3. '+\
+                    'A .pkl file is created at the same location '+\
+                    'in the first run for faster runtime in subsequent runs.')
+
 
 # classifier options
 
@@ -608,6 +616,57 @@ if __name__ == '__main__':
 
         train_and_evaluate_cls(classifier, train_dataloader, test_dataloader, optimizer, args)
         classifier = load_classifier(classifier, args)
+
+        if args.dataset == '3':
+            assert args.reference_file_2 is not None, \
+                ("Second reference file is needed for ds3!")
+            assert args.input_file_2 is not None, \
+                ("Second input file is needed for ds3!")
+            # do eval on second file here!
+            del train_data, test_data, val_data
+
+            source_file = h5py.File(args.input_file_2, 'r')
+            check_file(source_file, args, which='2nd input')
+
+            shower, energy = extract_shower_and_energy(source_file, which='2nd input')
+
+            reference_file = h5py.File(args.reference_file_2, 'r')
+            check_file(reference_file, args, which='2nd reference')
+
+            reference_shower, reference_energy = extract_shower_and_energy(reference_file,
+                                                                           which='2nd reference')
+
+            if os.path.exists(os.path.join(args.source_dir, args.reference_file_name + '_2.pkl')):
+                print("Loading .pkl reference")
+                reference_hlf = load_reference(os.path.join(args.source_dir,
+                                                            args.reference_file_name + '_2.pkl'))
+            else:
+                print("Computing .pkl reference")
+                reference_hlf = HLF.HighLevelFeatures(particle,
+                                                      filename='binning_dataset_{}.xml'.format(
+                                                          args.dataset.replace('-', '_')))
+                reference_hlf.Einc = reference_energy
+                save_reference(reference_hlf,
+                               os.path.join(args.source_dir, args.reference_file_name + '_2.pkl'))
+
+            if args.mode in ['all', 'cls-low']:
+                source_array = prepare_low_data_for_classifier(shower, energy, hlf, 0.,
+                                                               normed=False)
+                reference_array = prepare_low_data_for_classifier(reference_shower,
+                                                                  reference_energy, reference_hlf,
+                                                                  1., normed=False)
+            else:
+                raise NotImplementedError()
+
+            val_data, _, _ = ttv_split(source_array, reference_array,
+                                       split=np.array([1., 0., 0.]))
+
+            if args.save_mem:
+                val_data = TensorDataset(torch.tensor(val_data))
+            else:
+                val_data = TensorDataset(torch.tensor(val_data).to(args.device))
+
+            val_dataloader = DataLoader(val_data, batch_size=args.cls_batch_size, shuffle=False)
 
         with torch.no_grad():
             print("Now looking at independent dataset:")
