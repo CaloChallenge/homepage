@@ -166,7 +166,7 @@ def prepare_low_data_for_classifier(voxel, E_inc, hlf_class, label, normed=False
         ret = np.concatenate([np.log10(E_inc), voxel, np.log10(E_norm+1e-8),
                               label*np.ones_like(E_inc)], axis=1)
     else:
-        voxel = voxel / E_inc
+        voxel = 100.* voxel / E_inc
         ret = np.concatenate([np.log10(E_inc), voxel, label*np.ones_like(E_inc)], axis=1)
     return ret
 
@@ -568,8 +568,8 @@ if __name__ == '__main__':
                                                               reference_energy, reference_hlf, 1.,
                                                               normed=True)
         elif args.mode in ['cls-high']:
-            source_array = prepare_high_data_for_classifier(shower, hlf, 0.)
-            reference_array = prepare_high_data_for_classifier(reference_shower, reference_hlf, 1.)
+            source_array = prepare_high_data_for_classifier(energy, hlf, 0.)
+            reference_array = prepare_high_data_for_classifier(reference_energy, reference_hlf, 1.)
 
         train_data, test_data, val_data = ttv_split(source_array, reference_array)
 
