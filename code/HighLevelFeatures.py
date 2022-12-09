@@ -34,6 +34,8 @@ class HighLevelFeatures:
         self.E_layers = {}
         self.EC_etas = {}
         self.EC_phis = {}
+        self.EC_global_pos = None
+        self.EC_global_width = None
         self.width_etas = {}
         self.width_phis = {}
         self.particle = particle
@@ -42,15 +44,23 @@ class HighLevelFeatures:
         for idx, r_values in enumerate(self.r_edges):
             self.num_voxel.append((len(r_values)-1)*self.num_alpha[idx])
 
-    def _calculate_EC(self, eta, phi, energy):
+    def _calculate_EC(self, eta, phi, energy, z=None):
         eta_EC = (eta * energy).sum(axis=-1)/(energy.sum(axis=-1)+1e-16)
         phi_EC = (phi * energy).sum(axis=-1)/(energy.sum(axis=-1)+1e-16)
-        return eta_EC, phi_EC
+        if z is not None:
+            z_EC = (z * energy).sum(axis=-1)/(energy.sum(axis=-1)+1e-16)
+            return eta_EC, phi_EC, z_EC
+        else:
+            return eta_EC, phi_EC
 
-    def _calculate_Widths(self, eta, phi, energy):
+    def _calculate_Widths(self, eta, phi, energy, z=None):
         eta_width = (eta * eta * energy).sum(axis=-1)/(energy.sum(axis=-1)+1e-16)
         phi_width = (phi * phi * energy).sum(axis=-1)/(energy.sum(axis=-1)+1e-16)
-        return eta_width, phi_width
+        if z is not None:
+            z_width = (z * z * energy).sum(axis=-1)/(energy.sum(axis=-1)+1e-16)
+            return eta_width, phi_width, z_width
+        else:
+            return eta_width, phi_width
 
     def GetECandWidths(self, eta_layer, phi_layer, energy_layer):
         """ Computes center of energy in eta and phi as well as their widths """
@@ -62,8 +72,26 @@ class HighLevelFeatures:
         phi_width = np.sqrt((phi_width - phi_EC**2).clip(min=0.))
         return eta_EC, phi_EC, eta_width, phi_width
 
+    def GetGlobalECandWidths(self, eta, phi, z, energy):
+        """ Computes center of energy in eta, phi and z for whole shower as well as their widths """
+        eta_EC, phi_EC, z_EC = self._calculate_EC(eta, phi, energy, z=z)
+        eta_width, phi_width, z_width = self._calculate_Widths(eta, phi, energy, z=z)
+        # The following checks are needed to assure a positive argument to the sqrt,
+        # if there is very little energy things can go wrong
+        eta_width = np.sqrt((eta_width - eta_EC**2).clip(min=0.))
+        phi_width = np.sqrt((phi_width - phi_EC**2).clip(min=0.))
+        z_width = np.sqrt((z_width - z_EC**2).clip(min=0.))
+        return (eta_EC, phi_EC, z_EC), (eta_width, phi_width, z_width)
+
     def CalculateFeatures(self, data):
         """ Computes all high-level features for the given data """
+        if self.particle == 'electron':
+            # global center of energy, for now only for ds2 and ds3
+            full_z = np.zeros(self.bin_edges[-1])
+            full_eta = np.zeros(self.bin_edges[-1])
+            full_phi = np.zeros(self.bin_edges[-1])
+            z_loc = np.array(self.relevantLayers)*3.4 + 1.7
+
         self.E_tot = data.sum(axis=-1)
 
         for l in self.relevantLayers:
@@ -71,13 +99,20 @@ class HighLevelFeatures:
             self.E_layers[l] = E_layer
 
         for l in self.relevantLayers:
+            full_z[self.bin_edges[l]:self.bin_edges[l+1]] = \
+                z_loc[l]*np.ones(self.bin_edges[l+1]-self.bin_edges[l])
 
             if l in self.layersBinnedInAlpha:
+                full_phi[self.bin_edges[l]:self.bin_edges[l+1]] = self.phi_all_layers[l]
+                full_eta[self.bin_edges[l]:self.bin_edges[l+1]] = self.eta_all_layers[l]
+
                 self.EC_etas[l], self.EC_phis[l], self.width_etas[l], \
                     self.width_phis[l] = self.GetECandWidths(
                         self.eta_all_layers[l],
                         self.phi_all_layers[l],
                         data[:, self.bin_edges[l]:self.bin_edges[l+1]])
+        self.EC_global_pos, self.EC_global_width = \
+            self.GetGlobalECandWidths(full_eta, full_phi, full_z, data)
 
     def _DrawSingleLayer(self, data, layer_nr, filename, title=None, fig=None, subplot=(1, 1, 1),
                          vmax=None, colbar='alone'):
