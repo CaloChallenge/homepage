@@ -634,8 +634,8 @@ if __name__ == '__main__':
                 ("Second reference file is needed for ds3!")
             assert args.input_file_2 is not None, \
                 ("Second input file is needed for ds3!")
-            # do eval on second file here!
             del train_data, test_data, val_data
+            del train_dataloader, val_dataloader # keep test_dataloader for calibration
 
             source_file = h5py.File(args.input_file_2, 'r')
             check_file(source_file, args, which='2nd input')
@@ -661,14 +661,18 @@ if __name__ == '__main__':
                 save_reference(reference_hlf,
                                os.path.join(args.source_dir, args.reference_file_name + '_2.pkl'))
 
+            print("Preparing data for classifier.")
             if args.mode in ['all', 'cls-low']:
                 source_array = prepare_low_data_for_classifier(shower, energy, hlf, 0.,
                                                                normed=False)
+                del shower, energy
                 reference_array = prepare_low_data_for_classifier(reference_shower,
                                                                   reference_energy, reference_hlf,
                                                                   1., normed=False)
+                del reference_shower, reference_energy
             else:
                 raise NotImplementedError()
+            print("Preparing data for classifier DONE.")
 
             val_data, _, _ = ttv_split(source_array, reference_array,
                                        split=np.array([1., 0., 0.]))
