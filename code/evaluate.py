@@ -567,15 +567,19 @@ if __name__ == '__main__':
         if args.mode in ['all', 'cls-low']:
             source_array = prepare_low_data_for_classifier(shower, energy, hlf, 0.,
                                                            normed=False)
+            del shower, energy
             reference_array = prepare_low_data_for_classifier(reference_shower,
                                                               reference_energy, reference_hlf, 1.,
                                                               normed=False)
+            del reference_shower, reference_energy
         elif args.mode in ['cls-low-normed']:
             source_array = prepare_low_data_for_classifier(shower, energy, hlf, 0.,
                                                            normed=True)
+            del shower, energy
             reference_array = prepare_low_data_for_classifier(reference_shower,
                                                               reference_energy, reference_hlf, 1.,
                                                               normed=True)
+            del reference_shower, reference_energy
         elif args.mode in ['cls-high']:
             source_array = prepare_high_data_for_classifier(energy, hlf, 0.)
             reference_array = prepare_high_data_for_classifier(reference_energy, reference_hlf, 1.)
