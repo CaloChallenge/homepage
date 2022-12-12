@@ -563,6 +563,7 @@ if __name__ == '__main__':
 
             print("Calculating high-level features for classifer: DONE.\n")
 
+        print("Preparing data for classifier.")
         if args.mode in ['all', 'cls-low']:
             source_array = prepare_low_data_for_classifier(shower, energy, hlf, 0.,
                                                            normed=False)
@@ -579,6 +580,7 @@ if __name__ == '__main__':
             source_array = prepare_high_data_for_classifier(energy, hlf, 0.)
             reference_array = prepare_high_data_for_classifier(reference_energy, reference_hlf, 1.)
 
+        print("Preparing data for classifier DONE.")
         train_data, test_data, val_data = ttv_split(source_array, reference_array)
 
         # set up device
