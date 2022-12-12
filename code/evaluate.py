@@ -585,7 +585,11 @@ if __name__ == '__main__':
             reference_array = prepare_high_data_for_classifier(reference_energy, reference_hlf, 1.)
 
         print("Preparing data for classifier DONE.")
-        train_data, test_data, val_data = ttv_split(source_array, reference_array)
+        if args.dataset == '3':
+            split = np.array([0.8, 0.2, 0.])
+        else:
+            split = np.array([0.6, 0.2, 0.2])
+        train_data, test_data, val_data = ttv_split(source_array, reference_array, split=split)
 
         # set up device
         args.device = torch.device('cuda:'+str(args.which_cuda) \
