@@ -616,9 +616,11 @@ if __name__ == '__main__':
             test_data = TensorDataset(torch.tensor(test_data).to(args.device))
             val_data = TensorDataset(torch.tensor(val_data).to(args.device))
 
+        print("Creating dataloaders.")
         train_dataloader = DataLoader(train_data, batch_size=args.cls_batch_size, shuffle=True)
         test_dataloader = DataLoader(test_data, batch_size=args.cls_batch_size, shuffle=False)
         val_dataloader = DataLoader(val_data, batch_size=args.cls_batch_size, shuffle=False)
+        print("Creating dataloaders DONE.")
 
         train_and_evaluate_cls(classifier, train_dataloader, test_dataloader, optimizer, args)
         classifier = load_classifier(classifier, args)
