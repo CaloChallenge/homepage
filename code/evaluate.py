@@ -658,6 +658,7 @@ if __name__ == '__main__':
                                                       filename='binning_dataset_{}.xml'.format(
                                                           args.dataset.replace('-', '_')))
                 reference_hlf.Einc = reference_energy
+                reference_hlf.CalculateFeatures(reference_shower)
                 save_reference(reference_hlf,
                                os.path.join(args.source_dir, args.reference_file_name + '_2.pkl'))
 
@@ -671,7 +672,9 @@ if __name__ == '__main__':
                                                                   1., normed=False)
                 del reference_shower, reference_energy
             elif args.mode in ['cls-high']:
+                hlf.CalculateFeatures(shower)
                 del shower, reference_shower
+                hlf.Einc = energy
                 source_array = prepare_high_data_for_classifier(energy, hlf, 0.)
                 reference_array = prepare_high_data_for_classifier(reference_energy,
                                                                    reference_hlf, 1.)
