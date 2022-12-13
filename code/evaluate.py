@@ -670,6 +670,12 @@ if __name__ == '__main__':
                                                                   reference_energy, reference_hlf,
                                                                   1., normed=False)
                 del reference_shower, reference_energy
+            elif args.mode in ['cls-high']:
+                del shower, reference_shower
+                source_array = prepare_high_data_for_classifier(energy, hlf, 0.)
+                reference_array = prepare_high_data_for_classifier(reference_energy,
+                                                                   reference_hlf, 1.)
+                del energy, reference_energy
             else:
                 raise NotImplementedError()
             print("Preparing data for classifier DONE.")
