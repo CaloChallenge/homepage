@@ -633,8 +633,8 @@ if __name__ == '__main__':
 
         print("Calculating high-level features for FPD/KPD: DONE.\n")
 
-        source_array = prepare_high_data_for_classifier(source_file, hlf, 0.)
-        reference_array = prepare_high_data_for_classifier(reference_file, reference_hlf, 1.)
+        source_array = prepare_high_data_for_classifier(source_file, hlf, 0.)[:-1]
+        reference_array = prepare_high_data_for_classifier(reference_file, reference_hlf, 1.)[:-1]
 
         fpd_val, fpd_err = jetnet.evaluation.fpd(reference_array, source_array)
         kpd_val, kpd_err = jetnet.evaluation.kpd(reference_array, source_array)
