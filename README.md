@@ -85,10 +85,10 @@ dataset_file.close()
 Note that the distribution of incident energies of the samples should match the distribution in the validation data, as the histograms might otherwise be distorted.
 </p>
 
-### Timeline
+### Timeline and Workshop
 
 <p style='text-align: justify;'>
-We plan to conclude the challenge approximately 1 month before the next <a href='https://indico.cern.ch/event/1159913/'>ML4Jets conference</a> (scheduled for November 1-4, 2022, at Rutgers University). Results of the challenge will be presented at ML4Jets, and the challenge will culminate in a community paper documenting the various approaches and their outcomes. 
+We will conclude the challenge with a <a href='https://agenda.infn.it/event/34036/'>workshop at the end of May 2023 in Rome</a>. There, we will discuss the different approaches, as well as their merits and limits. If you have a contribution, please submit your abstract by May 1st 2023 on the workshop indico page. You will be contacted with instructions to submit your generated samples and the models. The challenge will culminate in a community paper documenting the various approaches and their outcomes. 
 </p>
 
 Please do not hesitate to ask questions: we will use the [ML4Jets slack channel](https://join.slack.com/t/ml4jets/shared_invite/enQtNDc4MjAzODE0NDIyLTU0MGIxNmZlY2E4MzY2YzEwNGI2MGI5MzJmMzEwODVjYWY4MDFhMzcyODYyMDViZTY4MTg2MWM2N2Y1YjBhOWM) to discuss technical questions related to this challenge. You are also encouraged to sign up for the <a href="https://groups.google.com/g/calochallenge"> Google groups mailing list </a> for infrequent announcements and communications.
