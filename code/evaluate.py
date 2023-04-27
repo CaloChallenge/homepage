@@ -109,8 +109,8 @@ parser.add_argument('--reference_file_2', default=None,
 
 parser.add_argument('--cls_n_layer', type=int, default=2,
                     help='Number of hidden layers in the classifier, default is 2.')
-parser.add_argument('--cls_n_hidden', type=int, default='512',
-                    help='Hidden nodes per layer of the classifier, default is 512.')
+parser.add_argument('--cls_n_hidden', type=int, default='2048',
+                    help='Hidden nodes per layer of the classifier, default is 2048.')
 parser.add_argument('--cls_dropout_probability', type=float, default=0.,
                     help='Dropout probability of the classifier, default is 0.')
 
