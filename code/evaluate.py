@@ -680,7 +680,13 @@ if __name__ == '__main__':
                                                                    reference_hlf, 1.)
                 del energy, reference_energy
             else:
-                raise NotImplementedError()
+                source_array = prepare_low_data_for_classifier(shower, energy, hlf, 0.,
+                                                               normed=True)
+                del shower, energy
+                reference_array = prepare_low_data_for_classifier(reference_shower,
+                                                                  reference_energy, reference_hlf,
+                                                                  1., normed=True)
+                del reference_shower, reference_energy
             print("Preparing data for classifier DONE.")
 
             val_data, _, _ = ttv_split(source_array, reference_array,
