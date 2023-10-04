@@ -340,6 +340,36 @@ def plot_cell_dist(shower_arr, ref_shower_arr, arg):
             f.write('\n\n')
     plt.close()
 
+def plot_sparsity(hlf_class, reference_class, arg):
+    """ plots sparsity in each layer """
+    for key in hlf_class.GetSparsity().keys():
+        plt.figure(figsize=(6, 6))
+        bins = np.linspace(0., 1., 21)
+        counts_ref, bins, _ = plt.hist(reference_class.GetSparsity()[key], bins=bins,
+                                       label='reference', density=True, histtype='stepfilled',
+                                       alpha=0.2, linewidth=2.)
+        counts_data, _, _ = plt.hist(hlf_class.GetSparsity()[key], label='generated', bins=bins,
+                                     histtype='step', linewidth=3., alpha=1., density=True)
+        plt.title("Sparsity in layer {}".format(key))
+        plt.xlabel(r'fraction of voxels with 0 energy deposition')
+        #plt.yscale('log')
+        plt.legend(fontsize=20)
+        plt.tight_layout()
+        if arg.mode in ['all', 'hist-p', 'hist']:
+            filename = os.path.join(arg.output_dir, 'Sparsity_layer_{}_dataset_{}.png'.format(
+                key,
+                arg.dataset))
+            plt.savefig(filename, dpi=300)
+        if arg.mode in ['all', 'hist-chi', 'hist']:
+            seps = _separation_power(counts_ref, counts_data, bins)
+            print("Separation power of Sparsity layer {} histogram: {}".format(key, seps))
+            with open(os.path.join(arg.output_dir, 'histogram_chi2_{}.txt'.format(arg.dataset)),
+                      'a') as f:
+                f.write('Sparsity layer {}: \n'.format(key))
+                f.write(str(seps))
+                f.write('\n\n')
+        plt.close()
+
 def _separation_power(hist1, hist2, bins):
     """ computes the separation power aka triangular discrimination (cf eq. 15 of 2009.03796)
         Note: the definition requires Sum (hist_i) = 1, so if hist1 and hist2 come from

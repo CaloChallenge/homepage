@@ -36,6 +36,7 @@ class HighLevelFeatures:
         self.EC_phis = {}
         self.width_etas = {}
         self.width_phis = {}
+        self.sparsity = {}
         self.particle = particle
 
         self.num_voxel = []
@@ -52,6 +53,10 @@ class HighLevelFeatures:
         phi_width = (phi * phi * energy).sum(axis=-1)/(energy.sum(axis=-1)+1e-16)
         return eta_width, phi_width
 
+    def _calculate_sparsity(self, layer_data, threshold=0):
+        """ Computes the sparsity of the given layer"""
+        return 1. - (layer_data > threshold).mean(axis=-1)
+
     def GetECandWidths(self, eta_layer, phi_layer, energy_layer):
         """ Computes center of energy in eta and phi as well as their widths """
         eta_EC, phi_EC = self._calculate_EC(eta_layer, phi_layer, energy_layer)
@@ -62,13 +67,15 @@ class HighLevelFeatures:
         phi_width = np.sqrt((phi_width - phi_EC**2).clip(min=0.))
         return eta_EC, phi_EC, eta_width, phi_width
 
-    def CalculateFeatures(self, data):
+    def CalculateFeatures(self, data, threshold=0.):
         """ Computes all high-level features for the given data """
         self.E_tot = data.sum(axis=-1)
 
         for l in self.relevantLayers:
-            E_layer = data[:, self.bin_edges[l]:self.bin_edges[l+1]].sum(axis=-1)
-            self.E_layers[l] = E_layer
+            E_layer = data[:, self.bin_edges[l]:self.bin_edges[l+1]]
+            self.E_layers[l] = E_layer.sum(axis=-1)
+            self.sparsity[l] = self._calculate_sparsity(E_layer, threshold=threshold)
+
 
         for l in self.relevantLayers:
 
@@ -214,6 +221,10 @@ class HighLevelFeatures:
     def GetWidthPhis(self):
         """ returns dictionary of widths of centers of energy in phi for each layer """
         return self.width_phis
+
+    def GetSparsity(self):
+        """ returns dictionary of sparsity for each layer """
+        return self.sparsity
 
     def DrawAverageShower(self, data, filename=None, title=None):
         """ plots average of provided showers """
