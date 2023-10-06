@@ -250,6 +250,14 @@ class HighLevelFeatures:
         """ returns dictionary of sparsity for each layer """
         return self.sparsity
 
+    def GetECR(self):
+        """ returns dictionary of centers of energy in r for each layer """
+        return self.EC_r
+
+    def GetWidthR(self):
+        """ returns dictionary of widths of centers of energy in r for each layer """
+        return self.width_r
+
     def DrawAverageShower(self, data, filename=None, title=None):
         """ plots average of provided showers """
         self._DrawShower(data.mean(axis=0), filename=filename, title=title)

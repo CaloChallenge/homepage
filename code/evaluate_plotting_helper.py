@@ -370,6 +370,80 @@ def plot_sparsity(hlf_class, reference_class, arg):
                 f.write('\n\n')
         plt.close()
 
+def plot_ECR(hlf_class, reference_class, arg):
+    """ plots center of energy in r """
+    for key in hlf_class.GetECR().keys():
+        if arg.dataset in ['2', '3']:
+            lim = (0., 42.)
+        elif key in [12, 13, 14]:
+            lim = (0., 1500.)
+        else:
+            lim = (0., 500.)
+        plt.figure(figsize=(6, 6))
+        bins = np.linspace(*lim, 101)
+        counts_ref, _, _ = plt.hist(reference_class.GetECR()[key], bins=bins,
+                                    label='reference', density=True, histtype='stepfilled',
+                                    alpha=0.2, linewidth=2.)
+        counts_data, _, _ = plt.hist(hlf_class.GetECR()[key], label='generated', bins=bins,
+                                     histtype='step', linewidth=3., alpha=1., density=True)
+        plt.title(r"Center of Energy in $r$ in layer {}".format(key))
+        plt.xlabel(r'[mm]')
+        plt.xlim(*lim)
+        plt.yscale('log')
+        plt.legend(fontsize=20)
+        plt.tight_layout()
+        if arg.mode in ['all', 'hist-p', 'hist']:
+            filename = os.path.join(arg.output_dir,
+                                    'ECR_layer_{}_dataset_{}.png'.format(key,
+                                                                         arg.dataset))
+            plt.savefig(filename, dpi=300)
+        if arg.mode in ['all', 'hist-chi', 'hist']:
+            seps = _separation_power(counts_ref, counts_data, bins)
+            print("Separation power of EC r layer {} histogram: {}".format(key, seps))
+            with open(os.path.join(arg.output_dir, 'histogram_chi2_{}.txt'.format(arg.dataset)),
+                      'a') as f:
+                f.write('EC r layer {}: \n'.format(key))
+                f.write(str(seps))
+                f.write('\n\n')
+        plt.close()
+
+def plot_ECWidthR(hlf_class, reference_class, arg):
+    """ plots width of center of energy in r """
+    for key in hlf_class.GetWidthR().keys():
+        if arg.dataset in ['2', '3']:
+            lim = (0., 42.)
+        elif key in [12, 13, 14]:
+            lim = (0., 1500.)
+        else:
+            lim = (0., 500.)
+        plt.figure(figsize=(6, 6))
+        bins = np.linspace(*lim, 101)
+        counts_ref, _, _ = plt.hist(reference_class.GetWidthR()[key], bins=bins,
+                                    label='reference', density=True, histtype='stepfilled',
+                                    alpha=0.2, linewidth=2.)
+        counts_data, _, _ = plt.hist(hlf_class.GetWidthR()[key], label='generated', bins=bins,
+                                     histtype='step', linewidth=3., alpha=1., density=True)
+        plt.title(r"Width of Center of Energy in $r$ in layer {}".format(key))
+        plt.xlabel(r'[mm]')
+        plt.xlim(*lim)
+        plt.yscale('log')
+        plt.legend(fontsize=20)
+        plt.tight_layout()
+        if arg.mode in ['all', 'hist-p', 'hist']:
+            filename = os.path.join(arg.output_dir,
+                                    'WidthR_layer_{}_dataset_{}.png'.format(key,
+                                                                            arg.dataset))
+            plt.savefig(filename, dpi=300)
+        if arg.mode in ['all', 'hist-chi', 'hist']:
+            seps = _separation_power(counts_ref, counts_data, bins)
+            print("Separation power of Width r layer {} histogram: {}".format(key, seps))
+            with open(os.path.join(arg.output_dir, 'histogram_chi2_{}.txt'.format(arg.dataset)),
+                      'a') as f:
+                f.write('Width r layer {}: \n'.format(key))
+                f.write(str(seps))
+                f.write('\n\n')
+        plt.close()
+
 def _separation_power(hist1, hist2, bins):
     """ computes the separation power aka triangular discrimination (cf eq. 15 of 2009.03796)
         Note: the definition requires Sum (hist_i) = 1, so if hist1 and hist2 come from
