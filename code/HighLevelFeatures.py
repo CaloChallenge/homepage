@@ -37,11 +37,17 @@ class HighLevelFeatures:
         self.width_etas = {}
         self.width_phis = {}
         self.sparsity = {}
+        self.EC_r = {}
+        self.width_r = {}
         self.particle = particle
 
+
         self.num_voxel = []
+        self.radial_center_mult = []
         for idx, r_values in enumerate(self.r_edges):
             self.num_voxel.append((len(r_values)-1)*self.num_alpha[idx])
+            self.radial_center_mult.append(self.num_alpha[idx] *\
+                                           [(r_values[1:] + r_values[:-1])*0.5])
 
     def _calculate_EC(self, eta, phi, energy):
         eta_EC = (eta * energy).sum(axis=-1)/(energy.sum(axis=-1)+1e-16)
@@ -57,6 +63,14 @@ class HighLevelFeatures:
         """ Computes the sparsity of the given layer"""
         return 1. - (layer_data > threshold).mean(axis=-1)
 
+    def _calculate_EC_r(self, radial_center, energy):
+        r_EC = (radial_center * energy).sum(axis=-1)/(energy.sum(axis=-1)+1e-16)
+        return r_EC
+
+    def _calculate_Width_r(self, radial_center, energy):
+        r_width = (radial_center * radial_center * energy).sum(axis=-1)/(energy.sum(axis=-1)+1e-16)
+        return r_width
+
     def GetECandWidths(self, eta_layer, phi_layer, energy_layer):
         """ Computes center of energy in eta and phi as well as their widths """
         eta_EC, phi_EC = self._calculate_EC(eta_layer, phi_layer, energy_layer)
@@ -66,6 +80,12 @@ class HighLevelFeatures:
         eta_width = np.sqrt((eta_width - eta_EC**2).clip(min=0.))
         phi_width = np.sqrt((phi_width - phi_EC**2).clip(min=0.))
         return eta_EC, phi_EC, eta_width, phi_width
+
+    # repeat the above for r
+    def GetCCandWidthR(self, r_layer, energy_layer):
+        """ Computes center of energy in r as well as its with per layer"""
+        pass
+        #r_EC = self._calculate_EC_r
 
     def CalculateFeatures(self, data, threshold=0.):
         """ Computes all high-level features for the given data """
@@ -79,6 +99,7 @@ class HighLevelFeatures:
 
         for l in self.relevantLayers:
 
+            # add r EC here
             if l in self.layersBinnedInAlpha:
                 self.EC_etas[l], self.EC_phis[l], self.width_etas[l], \
                     self.width_phis[l] = self.GetECandWidths(
