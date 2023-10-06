@@ -46,8 +46,9 @@ class HighLevelFeatures:
         self.radial_center_mult = []
         for idx, r_values in enumerate(self.r_edges):
             self.num_voxel.append((len(r_values)-1)*self.num_alpha[idx])
-            self.radial_center_mult.append(self.num_alpha[idx] *\
-                                           [(r_values[1:] + r_values[:-1])*0.5])
+            self.radial_center_mult.append(
+                self.num_alpha[idx]*[(r_values[i] + r_values[i+1])*0.5 for i in range(
+                    len(r_values)-1)])
 
     def _calculate_EC(self, eta, phi, energy):
         eta_EC = (eta * energy).sum(axis=-1)/(energy.sum(axis=-1)+1e-16)
