@@ -82,11 +82,12 @@ class HighLevelFeatures:
         phi_width = np.sqrt((phi_width - phi_EC**2).clip(min=0.))
         return eta_EC, phi_EC, eta_width, phi_width
 
-    # repeat the above for r
-    def GetCCandWidthR(self, r_layer, energy_layer):
+    def GetECandWidthR(self, r_layer, energy_layer):
         """ Computes center of energy in r as well as its with per layer"""
-        pass
-        #r_EC = self._calculate_EC_r
+        r_EC = self._calculate_EC_r(r_layer, energy_layer)
+        r_width = self._calculate_Width_r(r_layer, energy_layer)
+        r_width = np.sqrt((r_width - r_EC**2).clip(min=0.))
+        return r_EC, r_width
 
     def CalculateFeatures(self, data, threshold=0.):
         """ Computes all high-level features for the given data """
@@ -100,7 +101,8 @@ class HighLevelFeatures:
 
         for l in self.relevantLayers:
 
-            # add r EC here
+            self.EC_r[l], self.width_r[l] = self.GetECandWidthR(
+                self.radial_center_mult[l], data[:, self.bin_edges[l]:self.bin_edges[l+1]])
             if l in self.layersBinnedInAlpha:
                 self.EC_etas[l], self.EC_phis[l], self.width_etas[l], \
                     self.width_phis[l] = self.GetECandWidths(
