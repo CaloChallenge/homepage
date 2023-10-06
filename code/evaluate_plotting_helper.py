@@ -411,7 +411,7 @@ def plot_ECWidthR(hlf_class, reference_class, arg):
     """ plots width of center of energy in r """
     for key in hlf_class.GetWidthR().keys():
         if arg.dataset in ['2', '3']:
-            lim = (0., 42.)
+            lim = (0., 20.)
         elif key in [12, 13, 14]:
             lim = (0., 1500.)
         else:
