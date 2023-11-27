@@ -197,12 +197,19 @@ def prepare_high_data_for_classifier(hdf5_file, hlf_class, label, threshold=0.):
                           Width_etas/1e2, Width_phis/1e2, label*np.ones_like(E_inc)], axis=1)
     return ret
 
-def ttv_split(data1, data2, split=np.array([0.6, 0.2, 0.2])):
+def ttv_split(data1, data2, split=np.array([0.6, 0.2, 0.2]), dataset=None):
     """ splits data1 and data2 in train/test/val according to split,
+        or, if dataset is given, by given number of events
         returns shuffled and merged arrays
     """
     assert len(data1) == len(data2)
-    num_events = (len(data1) * split).astype(int)
+    if dataset is None:
+        num_events = (len(data1) * split).astype(int)
+    else:
+        num_events = {'1-photons': np.array([80000, 20000, 21000]),
+                      '1-pions': np.array([80000, 20000, 20800]),
+                      '2': np.array([60000, 20000, 20000]),
+                      '3': np.array([60000, 20000, 20000])}[dataset]
     np.random.shuffle(data1)
     np.random.shuffle(data2)
     train1, test1, val1 = np.split(data1, num_events.cumsum()[:-1])
@@ -575,7 +582,8 @@ if __name__ == '__main__':
             reference_array = prepare_high_data_for_classifier(reference_file, reference_hlf, 1.,
                                                                threshold=args.min_energy)
 
-        train_data, test_data, val_data = ttv_split(source_array, reference_array)
+        train_data, test_data, val_data = ttv_split(source_array, reference_array,
+                                                    dataset=args.dataset)
 
         # set up device
         args.device = torch.device('cuda:'+str(args.which_cuda) \
