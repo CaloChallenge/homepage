@@ -149,7 +149,7 @@ class DNN(torch.nn.Module):
         x = self.layers(x)
         return x
 
-def prepare_low_data_for_classifier(hdf5_file, hlf_class, label, normed=False):
+def prepare_low_data_for_classifier(hdf5_file, hlf_class, label, normed=False, threshold=0.):
     """ takes hdf5_file, extracts Einc and voxel energies, appends label, returns array """
     if normed:
         E_norm_rep = []
@@ -161,6 +161,7 @@ def prepare_low_data_for_classifier(hdf5_file, hlf_class, label, normed=False):
         E_norm_rep = np.concatenate(E_norm_rep, axis=1)
         E_norm = np.concatenate(E_norm, axis=1)
     voxel, E_inc = extract_shower_and_energy(hdf5_file, label)
+    voxel = np.where(voxel < threshold, np.zeros_like(voxel), voxel)
     if normed:
         voxel = voxel / (E_norm_rep+1e-16)
         ret = np.concatenate([np.log10(E_inc), voxel, np.log10(E_norm+1e-8),
@@ -170,9 +171,10 @@ def prepare_low_data_for_classifier(hdf5_file, hlf_class, label, normed=False):
         ret = np.concatenate([np.log10(E_inc), voxel, label*np.ones_like(E_inc)], axis=1)
     return ret
 
-def prepare_high_data_for_classifier(hdf5_file, hlf_class, label):
+def prepare_high_data_for_classifier(hdf5_file, hlf_class, label, threshold=0.):
     """ takes hdf5_file, extracts high-level features, appends label, returns array """
     voxel, E_inc = extract_shower_and_energy(hdf5_file, label)
+    voxel = np.where(voxel < threshold, np.zeros_like(voxel), voxel)
     E_tot = hlf_class.GetEtot()
     E_layer = []
     for layer_id in hlf_class.GetElayers():
@@ -409,17 +411,22 @@ def plot_histograms(hlf_class, reference_class, arg):
 
 if __name__ == '__main__':
     args = parser.parse_args()
-
     if not os.path.isdir(args.output_dir):
         os.makedirs(args.output_dir)
+
+    with open(os.path.join(args.output_dir, 'classifier_{}_{}.txt'.format(args.mode,
+                                                                          args.dataset)),
+              'a') as f:
+        f.write('parse_args():\n')
+        print(args, file=f)
 
     source_file = h5py.File(args.input_file, 'r')
     check_file(source_file, args, which='input')
 
     particle = {'1-photons': 'photon', '1-pions': 'pion',
                 '2': 'electron', '3': 'electron'}[args.dataset]
-    # minimal readout per voxel, ds1: from Michele, ds2/3: 0.5 keV / 0.033 scaling factor
-    args.min_energy = {'1-photons': 10, '1-pions': 10,
+    # minimal readout per voxel, ds1: 10 from Michele, ds2/3: 0.5 keV / 0.033 scaling factor
+    args.min_energy = {'1-photons': 1, '1-pions': 1,
                        '2': 0.5e-3/0.033, '3': 0.5e-3/0.033}[args.dataset]
 
     hlf = HLF.HighLevelFeatures(particle,
@@ -553,17 +560,20 @@ if __name__ == '__main__':
 
         if args.mode in ['all', 'cls-low']:
             source_array = prepare_low_data_for_classifier(source_file, hlf, 0.,
-                                                           normed=False)
+                                                           normed=False, threshold=args.min_energy)
             reference_array = prepare_low_data_for_classifier(reference_file, reference_hlf, 1.,
-                                                              normed=False)
+                                                              normed=False,
+                                                              threshold=args.min_energy)
         elif args.mode in ['cls-low-normed']:
             source_array = prepare_low_data_for_classifier(source_file, hlf, 0.,
                                                            normed=True)
             reference_array = prepare_low_data_for_classifier(reference_file, reference_hlf, 1.,
                                                               normed=True)
         elif args.mode in ['cls-high']:
-            source_array = prepare_high_data_for_classifier(source_file, hlf, 0.)
-            reference_array = prepare_high_data_for_classifier(reference_file, reference_hlf, 1.)
+            source_array = prepare_high_data_for_classifier(source_file, hlf, 0.,
+                                                            threshold=args.min_energy)
+            reference_array = prepare_high_data_for_classifier(reference_file, reference_hlf, 1.,
+                                                               threshold=args.min_energy)
 
         train_data, test_data, val_data = ttv_split(source_array, reference_array)
 
