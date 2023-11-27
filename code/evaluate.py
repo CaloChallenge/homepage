@@ -173,9 +173,9 @@ def prepare_low_data_for_classifier(hdf5_file, hlf_class, label, normed=False, t
 
 def prepare_high_data_for_classifier(hdf5_file, hlf_class, label, threshold=0.):
     """ takes hdf5_file, extracts high-level features, appends label, returns array """
-    voxel, E_inc = extract_shower_and_energy(hdf5_file, label)
-    voxel = np.where(voxel < threshold, np.zeros_like(voxel), voxel)
-    E_tot = hlf_class.GetEtot()
+    _, E_inc = extract_shower_and_energy(hdf5_file, label)
+    #voxel = np.where(voxel < threshold, np.zeros_like(voxel), voxel)
+    E_tot = hlf_class.GetEtot().reshape(-1, 1)
     E_layer = []
     for layer_id in hlf_class.GetElayers():
         E_layer.append(hlf_class.GetElayers()[layer_id].reshape(-1, 1))
@@ -188,13 +188,25 @@ def prepare_high_data_for_classifier(hdf5_file, hlf_class, label, threshold=0.):
         EC_phis.append(hlf_class.GetECPhis()[layer_id].reshape(-1, 1))
         Width_etas.append(hlf_class.GetWidthEtas()[layer_id].reshape(-1, 1))
         Width_phis.append(hlf_class.GetWidthPhis()[layer_id].reshape(-1, 1))
+    Sparsity = []
+    for layer_id in hlf_class.GetSparsity():
+        Sparsity.append(hlf_class.GetSparsity()[layer_id].reshape(-1, 1))
+    EC_R = []
+    Width_EC_R = []
+    for layer_id in hlf_class.GetECR():
+        EC_R.append(hlf_class.GetECR()[layer_id].reshape(-1, 1))
+        Width_EC_R.append(hlf_class.GetWidthR()[layer_id].reshape(-1, 1))
     E_layer = np.concatenate(E_layer, axis=1)
     EC_etas = np.concatenate(EC_etas, axis=1)
     EC_phis = np.concatenate(EC_phis, axis=1)
     Width_etas = np.concatenate(Width_etas, axis=1)
     Width_phis = np.concatenate(Width_phis, axis=1)
-    ret = np.concatenate([np.log10(E_inc), np.log10(E_layer+1e-8), EC_etas/1e2, EC_phis/1e2,
-                          Width_etas/1e2, Width_phis/1e2, label*np.ones_like(E_inc)], axis=1)
+    Sparsity = np.concatenate(Sparsity, axis=1)
+    EC_R = np.concatenate(EC_R, axis=1)
+    Width_EC_R = np.concatenate(Width_EC_R, axis=1)
+    ret = np.concatenate([np.log10(E_inc), np.log10(E_tot+1e-8), np.log10(E_layer+1e-8),
+                          EC_etas/1e2, EC_phis/1e2, Width_etas/1e2, Width_phis/1e2, Sparsity,
+                          EC_R, Width_EC_R, label*np.ones_like(E_inc)], axis=1)
     return ret
 
 def ttv_split(data1, data2, split=np.array([0.6, 0.2, 0.2]), dataset=None):
@@ -440,6 +452,7 @@ if __name__ == '__main__':
                                 filename='binning_dataset_{}.xml'.format(
                                     args.dataset.replace('-', '_')))
     shower, energy = extract_shower_and_energy(source_file, which='input')
+    shower = np.where(shower < args.min_energy, np.zeros_like(shower), shower)
 
     # get reference folder and name of file
     args.source_dir, args.reference_file_name = os.path.split(args.reference_file)
@@ -451,6 +464,10 @@ if __name__ == '__main__':
 
     reference_shower, reference_energy = extract_shower_and_energy(reference_file,
                                                                    which='reference')
+    reference_shower = np.where(reference_shower < args.min_energy,
+                                np.zeros_like(reference_shower),
+                                reference_shower)
+
     if os.path.exists(os.path.join(args.source_dir, args.reference_file_name + '.pkl')):
         print("Loading .pkl reference")
         reference_hlf = load_reference(os.path.join(args.source_dir,
@@ -634,6 +651,3 @@ if __name__ == '__main__':
             f.write('Final result of classifier test (AUC / JSD):\n'+\
                     '{:.4f} / {:.4f}\n\n'.format(eval_auc, eval_JSD))
 
-
-
-    # todo: sparsity
