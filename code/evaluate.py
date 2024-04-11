@@ -209,9 +209,10 @@ def prepare_high_data_for_classifier(hdf5_file, hlf_class, label, threshold=0.):
     Sparsity = np.concatenate(Sparsity, axis=1)
     EC_R = np.concatenate(EC_R, axis=1)
     Width_EC_R = np.concatenate(Width_EC_R, axis=1)
-    ret = np.concatenate([np.log10(E_inc), np.log10(E_tot+1e-8), np.log10(E_layer+1e-8),
-                          EC_etas/1e2, EC_phis/1e2, Width_etas/1e2, Width_phis/1e2, Sparsity,
-                          EC_R, Width_EC_R, label*np.ones_like(E_inc)], axis=1)
+    ret = np.concatenate([np.log10(E_inc), np.log10(E_layer+1e-8),
+                          EC_etas/1e2, EC_phis/1e2, Width_etas/1e2, Width_phis/1e2,
+                          np.log10(E_tot+1e-8), Sparsity, EC_R/1e2, Width_EC_R/1e2,
+                          label*np.ones_like(E_inc)], axis=1)
     return ret
 
 def ttv_split(data1, data2, split=np.array([0.6, 0.2, 0.2]), dataset=None):
@@ -450,7 +451,7 @@ if __name__ == '__main__':
     particle = {'1-photons': 'photon', '1-pions': 'pion',
                 '2': 'electron', '3': 'electron'}[args.dataset]
     # minimal readout per voxel, ds1: 10 from Michele, ds2/3: 0.5 keV / 0.033 scaling factor
-    args.min_energy = {'1-photons': 1, '1-pions': 1,
+    args.min_energy = {'1-photons': 1., '1-pions': 1.,
                        '2': 0.5e-3/0.033, '3': 0.5e-3/0.033}[args.dataset]
 
     hlf = HLF.HighLevelFeatures(particle,
