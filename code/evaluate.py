@@ -50,6 +50,9 @@ import HighLevelFeatures as HLF
 
 from evaluate_plotting_helper import *
 
+import jetnet
+
+
 torch.set_default_dtype(torch.float64)
 
 plt.rc('text', usetex=True)
@@ -69,7 +72,7 @@ parser.add_argument('--reference_file', '-r',
                     'in the first run for faster runtime in subsequent runs.')
 parser.add_argument('--mode', '-m', default='all',
                     choices=['all', 'avg', 'avg-E', 'hist-p', 'hist-chi', 'hist',
-                             'cls-low', 'cls-low-normed', 'cls-high'],
+                             'cls-low', 'cls-low-normed', 'cls-high', 'fpd', 'kpd'],
                     help=("What metric to evaluate: " +\
                           "'avg' plots the shower average;" +\
                           "'avg-E' plots the shower average for energy ranges;" +\
@@ -80,6 +83,8 @@ parser.add_argument('--mode', '-m', default='all',
                           "'cls-low-normed' trains a classifier on the low-level feautures" +\
                           " with calorimeter layers normalized to 1;" +\
                           "'cls-high' trains a classifier on the high-level features;" +\
+                          "'fpd' measures the Frechet physics distance on the high-level features;" +\
+                          "'kpd' measures the Kernel physics distance on the high-level features;" +\
                           "'all' does the full evaluation, ie all of the above" +\
                           " with low-level classifier."))
 parser.add_argument('--dataset', '-d', choices=['1-photons', '1-pions', '2', '3'],
@@ -651,3 +656,32 @@ if __name__ == '__main__':
             f.write('Final result of classifier test (AUC / JSD):\n'+\
                     '{:.4f} / {:.4f}\n\n'.format(eval_auc, eval_JSD))
 
+    if args.mode in ['all', 'fpd', 'kpd']:
+        print("Calculating high-level features for FPD/KPD ...")
+        hlf.CalculateFeatures(shower)
+        hlf.Einc = energy
+
+        if reference_hlf.E_tot is None:
+            reference_hlf.CalculateFeatures(reference_shower)
+            save_reference(reference_hlf,
+                           os.path.join(args.source_dir, args.reference_file_name + '.pkl'))
+
+        print("Calculating high-level features for FPD/KPD: DONE.\n")
+
+        # get high level features and remove class label
+        source_array = prepare_high_data_for_classifier(source_file, hlf, 0.,
+                                                        threshold=args.min_energy)[:, :-1]
+        reference_array = prepare_high_data_for_classifier(reference_file, reference_hlf, 1.,
+                                                           threshold=args.min_energy)[:, :-1]
+
+        fpd_val, fpd_err = jetnet.evaluation.fpd(reference_array, source_array)
+        kpd_val, kpd_err = jetnet.evaluation.kpd(reference_array, source_array)
+
+        result_str = (
+            f"FPD (x10^3): {fpd_val*1e3:.4f} ± {fpd_err*1e3:.4f}\n"
+            f"KPD (x10^3): {kpd_val*1e3:.4f} ± {kpd_err*1e3:.4f}"
+        )
+
+        print(result_str)
+        with open(os.path.join(args.output_dir, 'fpd_kpd_{}.txt'.format(args.dataset)), 'w') as f:
+            f.write(result_str)
