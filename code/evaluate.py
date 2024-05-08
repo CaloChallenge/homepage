@@ -49,6 +49,7 @@ from sklearn.isotonic import IsotonicRegression
 import HighLevelFeatures as HLF
 
 from evaluate_plotting_helper import *
+from resnet import generate_model
 
 
 
@@ -72,7 +73,7 @@ parser.add_argument('--reference_file', '-r',
                     'in the first run for faster runtime in subsequent runs.')
 parser.add_argument('--mode', '-m', default='all',
                     choices=['all', 'avg', 'avg-E', 'hist-p', 'hist-chi', 'hist',
-                             'cls-low', 'cls-low-normed', 'cls-high', 'fpd', 'kpd'],
+                             'cls-low', 'cls-low-normed', 'cls-high', 'fpd', 'kpd', 'cls-resnet'],
                     help=("What metric to evaluate: " +\
                           "'avg' plots the shower average;" +\
                           "'avg-E' plots the shower average for energy ranges;" +\
@@ -85,6 +86,7 @@ parser.add_argument('--mode', '-m', default='all',
                           "'cls-high' trains a classifier on the high-level features;" +\
                           "'fpd' measures the Frechet physics distance on the high-level features;" +\
                           "'kpd' measures the Kernel physics distance on the high-level features;" +\
+                          "'cls-resnet' trains a CNN-ResNet classifier" +\
                           "'all' does the full evaluation, ie all of the above" +\
                           " with low-level classifier."))
 parser.add_argument('--dataset', '-d', choices=['1-photons', '1-pions', '2', '3'],
@@ -104,6 +106,8 @@ parser.add_argument('--output_dir', default='evaluation_results/',
 #parser.add_argument('--cls_load', action='store_true', default=False,
 #                    help='Whether or not load classifier from --output_dir')
 
+parser.add_argument('--cls_resnet_layers', type=int, default=18,
+                    help='Number of layers in the ResNet classifier, default is 18.')
 parser.add_argument('--cls_n_layer', type=int, default=2,
                     help='Number of hidden layers in the classifier, default is 2.')
 parser.add_argument('--cls_n_hidden', type=int, default='2048',
@@ -576,7 +580,7 @@ if __name__ == '__main__':
         plot_cell_dist(shower, reference_shower, args)
         print("Plotting histograms: DONE. \n")
 
-    if args.mode in ['all', 'cls-low', 'cls-high', 'cls-low-normed']:
+    if args.mode in ['all', 'cls-low', 'cls-high', 'cls-low-normed', 'cls-resnet']:
         print("Calculating high-level features for classifier ...")
         hlf.CalculateFeatures(shower)
         hlf.Einc = energy
@@ -588,7 +592,7 @@ if __name__ == '__main__':
 
         print("Calculating high-level features for classifer: DONE.\n")
 
-        if args.mode in ['all', 'cls-low']:
+        if args.mode in ['all', 'cls-low', 'cls-resnet']:
             source_array = prepare_low_data_for_classifier(source_file, hlf, 0.,
                                                            normed=False, threshold=args.min_energy)
             reference_array = prepare_low_data_for_classifier(reference_file, reference_hlf, 1.,
@@ -613,13 +617,18 @@ if __name__ == '__main__':
                                    if torch.cuda.is_available() and not args.no_cuda else 'cpu')
         print("Using {}".format(args.device))
 
-        # set up DNN classifier
-        input_dim = train_data.shape[1]-1
-        DNN_kwargs = {'num_layer':args.cls_n_layer,
-                      'num_hidden':args.cls_n_hidden,
-                      'input_dim':input_dim,
-                      'dropout_probability':args.cls_dropout_probability}
-        classifier = DNN(**DNN_kwargs)
+        if args.mode in ['all', 'cls-low', 'cls-low-normed', 'cls-high']:
+            # set up DNN classifier
+            input_dim = train_data.shape[1]-1
+            DNN_kwargs = {'num_layer':args.cls_n_layer,
+                          'num_hidden':args.cls_n_hidden,
+                          'input_dim':input_dim,
+                          'dropout_probability':args.cls_dropout_probability}
+            classifier = DNN(**DNN_kwargs)
+        elif args.mode in ['cls-resnet']:
+            classifier = generate_model(args.cls_resnet_layers,
+                                        img_shape={'2': (45, 16, 9),
+                                                   '3': (45, 50, 18)}[args.dataset])
         classifier.to(args.device)
         print(classifier)
         total_parameters = sum(p.numel() for p in classifier.parameters() if p.requires_grad)
