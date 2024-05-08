@@ -50,7 +50,7 @@ import HighLevelFeatures as HLF
 
 from evaluate_plotting_helper import *
 
-import jetnet
+
 
 
 torch.set_default_dtype(torch.float64)
@@ -658,6 +658,7 @@ if __name__ == '__main__':
                     '{:.4f} / {:.4f}\n\n'.format(eval_auc, eval_JSD))
 
     if args.mode in ['all', 'fpd', 'kpd']:
+        import jetnet
         print("Calculating high-level features for FPD/KPD ...")
         hlf.CalculateFeatures(shower)
         hlf.Einc = energy
@@ -675,8 +676,8 @@ if __name__ == '__main__':
         reference_array = prepare_high_data_for_classifier(reference_file, reference_hlf, 1.,
                                                            threshold=args.min_energy)[:, :-1]
 
-        fpd_val, fpd_err = jetnet.evaluation.fpd(reference_array, source_array)
-        kpd_val, kpd_err = jetnet.evaluation.kpd(reference_array, source_array)
+        fpd_val, fpd_err = jetnet.evaluation.fpd(reference_array, source_array, min_samples=10000)
+        kpd_val, kpd_err = jetnet.evaluation.kpd(reference_array, source_array, batch_size=10000)
 
         result_str = (
             f"FPD (x10^3): {fpd_val*1e3:.4f} ± {fpd_err*1e3:.4f}\n"
