@@ -20,6 +20,7 @@
                    'cls-low': trains a classifier on low-level features (voxels).
                    'cls-low-normed': trains a classifier on normalized voxels.
                    'cls-high': trains a classifier on high-level features (same as histograms).
+                   'prdc': computes precision, recall, density, and coverage
         -d --dataset: Which dataset the evaluation is for. Choices are
                       '1-photons', '1-pions', '2', '3'
            --output_dir: Folder in which the evaluation results (plots, scores) are saved.
@@ -53,7 +54,6 @@ from resnet import generate_model
 
 
 
-
 torch.set_default_dtype(torch.float64)
 
 plt.rc('text', usetex=True)
@@ -73,7 +73,7 @@ parser.add_argument('--reference_file', '-r',
                     'in the first run for faster runtime in subsequent runs.')
 parser.add_argument('--mode', '-m', default='all',
                     choices=['all', 'avg', 'avg-E', 'hist-p', 'hist-chi', 'hist',
-                             'cls-low', 'cls-low-normed', 'cls-high', 'fpd', 'kpd', 'cls-resnet'],
+                             'cls-low', 'cls-low-normed', 'cls-high', 'fpd', 'kpd', 'cls-resnet', 'prdc'],
                     help=("What metric to evaluate: " +\
                           "'avg' plots the shower average;" +\
                           "'avg-E' plots the shower average for energy ranges;" +\
@@ -87,6 +87,7 @@ parser.add_argument('--mode', '-m', default='all',
                           "'fpd' measures the Frechet physics distance on the high-level features;" +\
                           "'kpd' measures the Kernel physics distance on the high-level features;" +\
                           "'cls-resnet' trains a CNN-ResNet classifier" +\
+                          "'prdc' computs precision, recall, density, and coverage" +\
                           "'all' does the full evaluation, ie all of the above" +\
                           " with low-level classifier."))
 parser.add_argument('--dataset', '-d', choices=['1-photons', '1-pions', '2', '3'],
@@ -121,6 +122,9 @@ parser.add_argument('--cls_n_epochs', type=int, default=50,
                     help='Number of epochs to train classifier, default is 50.')
 parser.add_argument('--cls_lr', type=float, default=2e-4,
                     help='Learning rate of the classifier, default is 2e-4.')
+
+parser.add_argument('--prdc_k', type=int, default=1,
+                    help='Number of nearest neighbors for PRDC algorithm, default is 1')
 
 # CUDA parameters
 parser.add_argument('--no_cuda', action='store_true', help='Do not use cuda.')
@@ -696,3 +700,15 @@ if __name__ == '__main__':
         print(result_str)
         with open(os.path.join(args.output_dir, 'fpd_kpd_{}.txt'.format(args.dataset)), 'w') as f:
             f.write(result_str)
+
+
+    if args.mode in ['all', 'prdc']:
+        from prdc import compute_prdc
+        print("Computing precision, recall, density, and coverage ...")
+
+        metrics = compute_prdc(real_features=reference_shower, fake_features=shower, nearest_k=args.prdc_k)
+
+        print(f"comparing train to eval data gives {metrics}")
+
+        with open(os.path.join(args.output_dir, 'prdc_{}.txt'.format(args.dataset)), 'w') as f:
+            f.write(metrics)
