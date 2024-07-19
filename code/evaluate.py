@@ -123,8 +123,8 @@ parser.add_argument('--cls_n_epochs', type=int, default=50,
 parser.add_argument('--cls_lr', type=float, default=2e-4,
                     help='Learning rate of the classifier, default is 2e-4.')
 
-parser.add_argument('--prdc_k', type=int, default=1,
-                    help='Number of nearest neighbors for PRDC algorithm, default is 1')
+parser.add_argument('--prdc_k', type=int, default=5,
+                    help='Number of nearest neighbors for PRDC algorithm, default is 5')
 
 # CUDA parameters
 parser.add_argument('--no_cuda', action='store_true', help='Do not use cuda.')
@@ -706,9 +706,16 @@ if __name__ == '__main__':
         from prdc import compute_prdc
         print("Computing precision, recall, density, and coverage ...")
 
-        metrics = compute_prdc(real_features=reference_shower, fake_features=shower, nearest_k=args.prdc_k)
+        reference_shower = np.where(reference_shower == 0., 0.1*np.ones_like(reference_shower), 
+                                    reference_shower)
+        shower = np.where(shower == 0., 0.1*np.ones_like(shower), shower)
+
+        metrics = compute_prdc(real_features=np.log10(reference_shower), 
+                               fake_features=np.log10(shower), 
+                               nearest_k=args.prdc_k)
 
         print(f"comparing train to eval data gives {metrics}")
 
         with open(os.path.join(args.output_dir, 'prdc_{}.txt'.format(args.dataset)), 'w') as f:
-            f.write(metrics)
+            for key in metrics.keys():
+                f.write(f"{key}: {metrics[key]}")
