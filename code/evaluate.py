@@ -125,7 +125,8 @@ parser.add_argument('--cls_lr', type=float, default=2e-4,
 
 parser.add_argument('--prdc_k', type=int, default=5,
                     help='Number of nearest neighbors for PRDC algorithm, default is 5')
-
+parser.add_argument('--prdc_ext', action='store_true', default=False,
+                    help='Whether or not extended reference data for ds2/3 should be used')
 # CUDA parameters
 parser.add_argument('--no_cuda', action='store_true', help='Do not use cuda.')
 parser.add_argument('--which_cuda', default=0, type=int,
@@ -705,6 +706,48 @@ if __name__ == '__main__':
     if args.mode in ['all', 'prdc']:
         from prdc import compute_prdc
         print("Computing precision, recall, density, and coverage ...")
+
+        if args.prdc_ext:
+
+            args.source_dir
+            which_list = {'2': [3,4,5,6,7,8,9,10,11],
+                          '3': [5,6,7,8,9,11,12,13,14]}[args.dataset]
+            which_list = {'2': [3],
+                          '3': [5]}[args.dataset]
+
+            which_base = {'2': '2.',
+                          '3': 'joined.'}[args.dataset]
+            reference_file = h5py.File(args.reference_file, 'r')
+
+            reference_shower = [] 
+            reference_energy = []
+            reference_shower_tmp, reference_energy_tmp = extract_shower_and_energy(
+                reference_file,
+                which='reference 1')
+            reference_shower.append(reference_shower_tmp)
+            reference_energy.append(reference_energy_tmp)
+
+            for add_file in which_list:
+                reference_file = h5py.File(
+                    args.reference_file.replace(
+                        which_base, f"{add_file}.").replace('official', 'official_extended'), 'r')
+                reference_shower_tmp, reference_energy_tmp = extract_shower_and_energy(
+                    reference_file,
+                    which=f'reference {add_file}')
+                reference_shower.append(reference_shower_tmp)
+                reference_energy.append(reference_energy_tmp)
+
+            reference_shower = np.array(reference_shower)
+            reference_energy = np.array(reference_energy)
+
+            reference_shower = np.concatenate([*reference_shower])
+            reference_energy = np.concatenate([*reference_energy])
+
+
+            reference_shower = np.where(reference_shower < args.min_energy,
+                                np.zeros_like(reference_shower),
+                                reference_shower)
+
 
         reference_shower = np.where(reference_shower == 0., 0.1*np.ones_like(reference_shower), 
                                     reference_shower)
