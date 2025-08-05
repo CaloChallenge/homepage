@@ -7,7 +7,7 @@ Welcome to the home of the first-ever Fast Calorimeter Simulation Challenge!
 </p>
 
 <p style='text-align: justify;'>
-The purpose of this challenge is to spur the development and benchmarking of fast and high-fidelity calorimeter shower generation using deep learning methods. Currently, generating calorimeter showers of interacting particles (electrons, photons, pions, ...) using GEANT4 is a major computational bottleneck at the LHC, and it is forecast to overwhelm the computing budget of the LHC experiments in the near future. Therefore there is an urgent need to develop GEANT4 emulators that are both fast (computationally lightweight) and accurate. The LHC collaborations have been developing fast simulation methods for some time, and the hope of this challenge is to directly compare new deep learning approaches on common benchmarks. It is expected that participants will make use of cutting-edge techniques in generative modeling with deep learning, e.g. GANs, VAEs and normalizing flows. 
+The purpose of this challenge was to spur the development and benchmarking of fast and high-fidelity calorimeter shower generation using deep learning methods. Currently, generating calorimeter showers of interacting particles (electrons, photons, pions, ...) using GEANT4 is a major computational bottleneck at the LHC, and it is forecast to overwhelm the computing budget of the LHC experiments in the near future. Therefore there is an urgent need to develop GEANT4 emulators that are both fast (computationally lightweight) and accurate. The LHC collaborations have been developing fast simulation methods for some time, and the hope of this challenge is to directly compare new deep learning approaches on common benchmarks. It is expected that participants will make use of cutting-edge techniques in generative modeling with deep learning, e.g. GANs, VAEs and normalizing flows. The results of the CaloChallenge are summarized in the <a href='https://arxiv.org/abs/2410.21611'>final write-up</a>. 
 </p>
 
 <p style='text-align: justify;'>
@@ -85,15 +85,15 @@ dataset_file.close()
 Note that the distribution of incident energies of the samples should match the distribution in the validation data, as the histograms might otherwise be distorted.
 </p>
 
-### Timeline and Workshop
+### Timeline, Workshops, Final Results, and Legacy
 
 <p style='text-align: justify;'>
-We will conclude the challenge with a <a href='https://agenda.infn.it/event/34036/'>workshop at the end of May 2023 in Rome</a>. There, we will discuss the different approaches, as well as their merits and limits. If you have a contribution, please submit your abstract by May 1st 2023 on the workshop indico page. You will be contacted with instructions to submit your generated samples and the models. The challenge will culminate in a community paper documenting the various approaches and their outcomes. 
+Intermediate results were presented at a <a href='https://agenda.infn.it/event/34036/'>workshop at the end of May 2023 in Rome</a>, <a href='https://indico.cern.ch/event/1159913/'>ML4Jets 2022 at Rutgers</a>, and <a href='https://indico.cern.ch/event/1253794/'>ML4Jets 2023 in Hamburg</a>. There, we discussed the different approaches, as well as their merits and limits. The final community paper documenting the various approaches and their outcomes is available on <a href='https://arxiv.org/abs/2410.21611'>arXiv</a>. 
 </p>
 
-Please do not hesitate to ask questions: we will use the [ML4Jets slack channel](https://join.slack.com/t/ml4jets/shared_invite/enQtNDc4MjAzODE0NDIyLTU0MGIxNmZlY2E4MzY2YzEwNGI2MGI5MzJmMzEwODVjYWY4MDFhMzcyODYyMDViZTY4MTg2MWM2N2Y1YjBhOWM) to discuss technical questions related to this challenge. You are also encouraged to sign up for the <a href="https://groups.google.com/g/calochallenge"> Google groups mailing list </a> for infrequent announcements and communications.
-
-Good luck!
+<p style='text-align: justify;'>
+In addition to the <a href='https://arxiv.org/abs/2410.21611'>final write-up</a>, we share the submitted models, samples, and code and numbers to reproduce the figures of it. The git repositories of the individual submissions can be found in the <a href='https://arxiv.org/abs/2410.21611'>write-up</a>. The submitted samples are on Zenodo: <a href="https://doi.org/10.5281/zenodo.15961728">Dataset 1 - photons</a>, <a href="https://doi.org/10.5281/zenodo.15961924">Dataset 1 - pions</a>, <a href="https://doi.org/10.5281/zenodo.15962050">Dataset 2</a>, and <a href="https://doi.org/10.5281/zenodo.15962527">Dataset 3</a>. All numbers of the published figures and tables are available digitally here at the folder <pre>final_results/CaloChallenge_results_ds*.hdf</pre>. A Jupyter notebook that reads those files and produces the figures is available in the same folder under <pre>final_results/figure_creation.ipynb</pre>. 
+</p>
 
 _Michele Faucci Giannelli, Gregor Kasieczka, Claudius Krause, Ben Nachman, Dalila Salamani, David Shih and Anna Zaborowska_
 
